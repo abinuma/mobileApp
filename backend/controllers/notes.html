@@ -1,0 +1,384 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Document</title>
+  </head>
+  <body></body>
+
+  <script>
+
+// Callback Hell version - restaurant flow with multiple steps
+
+
+
+function takeOrder(dishName, takeCallback) {
+    console.log(`Waiter: Taking order for ${dishName}...`);
+    setTimeout(() => {
+        console.log(`Waiter: Order taken successfully.`);
+        takeCallback(null, { orderId: 1001, dish: dishName });
+    }, 800);
+}
+
+function checkIngredients(order, checkCallback) {
+    console.log(`Kitchen: Checking ingredients for ${order.dish}...`);
+    setTimeout(() => {
+        const hasIngredients = true; // pretend sometimes fails
+        if (hasIngredients) {
+            console.log(`Kitchen: All ingredients available.`);
+            checkCallback(null, order);
+        } else {
+            checkCallback("Out of tomatoes!", null);
+        }
+    }, 1200);
+}
+
+function cookFood(order, cookCallback) {
+    console.log(`Kitchen: Started cooking ${order.dish}... `);
+    setTimeout(() => {
+        console.log(`Kitchen: ${order.dish} is cooked!`);
+        cookCallback("error happend", { ...order, status: "cooked" });
+    }, 2500);
+}
+
+function packFood(order, packCallback) {
+    console.log(`Kitchen: Packing ${order.dish}... 📦`);
+    setTimeout(() => {
+        console.log(`Kitchen: Food packed and ready to hand over.`);
+        packCallback(null, { ...order, status: "packed", readyTime: new Date() });
+    }, 900);
+}
+
+// The nightmare usage (this is what we want to avoid)
+
+console.log("Customer arrives and wants to order...");
+console.log("----------------------------------------");
+
+takeOrder("Burger", function (err, order) {
+    if (err) {
+        console.log("Error taking order:", err);
+        return;
+    }
+
+    checkIngredients(order, function (err, orderWithIngredients) {
+        if (err) {
+            console.log("Cannot prepare food:", err);
+            return;
+        }
+
+        cookFood(orderWithIngredients, function (err, cookedOrder) {
+            if (err) {
+                console.log("Cooking failed:", err);
+                return;
+            }
+
+            packFood(cookedOrder, function (err, finalOrder) {
+                if (err) {
+                    console.log("Packing failed:", err);
+                    return;
+                }
+
+                // Finally success
+                console.log("");
+                console.log("╔════════════════════════════════════╗");
+                console.log("║         FOOD IS READY!             ║");
+                console.log(`║   ${finalOrder.dish} for order #${finalOrder.orderId}   ║`);
+                console.log("║   You can come pick it up now!     ║");
+                console.log("╚════════════════════════════════════╝");
+                console.log("Customer starts eating! 😋🍔");
+            });
+        });
+    });
+});
+ 
+console.log("Customer sits down and waits... (code continues running)");
+console.log("----------------------------------------");
+  </script>
+  
+  <script>
+
+    //promises version - restaurant flow with multiple steps
+   function takeOrder(dishName) {
+    console.log(`Waiter: Taking order for ${dishName}...`);
+    return new Promise((resolve, reject) => {
+        setTimeout(() => {
+            console.log(`Waiter: Order taken successfully.`);
+            resolve({ orderId: 1001, dish: dishName });
+        }, 800);
+    });
+}
+
+function checkIngredients(order) {
+    console.log(`Kitchen: Checking ingredients for ${order.dish}...`);
+    return new Promise((resolve, reject) => {
+        setTimeout(() => {
+            const hasIngredients = true;
+            if (hasIngredients) {
+                console.log(`Kitchen: All ingredients available.`);
+                resolve(order);
+            } else {
+                reject("Out of tomatoes!");
+            }
+        }, 1200);
+    });
+}
+
+function cookFood(order) {
+    console.log(`Kitchen: Started cooking ${order.dish}...`);
+    return new Promise((resolve, reject) => {
+        setTimeout(() => {
+            console.log(`Kitchen: ${order.dish} is cooked!`);
+            // ❌ intentionally fail like your callback version
+            reject("error happend");
+        }, 2500);
+    });
+}
+
+function packFood(order) {
+    console.log(`Kitchen: Packing ${order.dish}... 📦`);
+    return new Promise((resolve, reject) => {
+        setTimeout(() => {
+            console.log(`Kitchen: Food packed and ready to hand over.`);
+            resolve({ ...order, status: "packed", readyTime: new Date() });
+        }, 900);
+    });
+}
+
+
+console.log("Customer arrives and wants to order...");
+console.log("----------------------------------------");
+
+takeOrder("Burger")
+    .then(checkIngredients)
+    .then(cookFood)   // ❌ error happens here
+    .then(packFood)   // ⛔ skipped
+    .then(finalOrder => {
+        console.log("");
+        console.log("╔════════════════════════════════════╗");
+        console.log("║         FOOD IS READY!             ║");
+        console.log(`║   ${finalOrder.dish} for order #${finalOrder.orderId}   ║`);
+        console.log("║   You can come pick it up now!     ║");
+        console.log("╚════════════════════════════════════╝");
+        console.log("Customer starts eating! 😋🍔");
+    })
+    .catch(err => {
+        console.log("Cooking failed:", err);
+    });
+
+console.log("Customer sits down and waits... (code continues running)");
+console.log("----------------------------------------");
+/*
+Promises pass only ONE value forward.
+If you want multiple things:
+❌ Wrong:
+resolve(a, b);
+✅ Correct:
+resolve({ a, b });
+
+Promises model data flow, not control flow.which means you can't decide to skip a step like you can with callbacks. If an error happens, it will automatically skip all the remaining .then() steps and jump to the nearest .catch() handler.
+Control flow is about:
+when code runs
+which line runs next
+if / else
+return
+loops
+
+on Callbacks:
+You are responsible for:
+stopping on error
+calling next function
+passing correct arguments
+
+Data flow is about:
+what data moves forward
+who receives it next
+what happens to the data after each step
+In Promises:
+You don’t say “run this next”
+You say “here is my result”
+
+on promises:
+You don’t say:
+when to stop
+when to continue
+who to call next
+You only say:
+“here is my output”
+“or here is my error”
+
+Handing off responsibility to the next step
+When you write: resolve(order);You’re saying:
+“I’m done.
+I don’t care who uses this.
+Whoever is next, here is the order.”
+That’s handing off responsibility.
+You don’t:
+call the next function
+know which .then() will receive it
+care how it’s used
+
+deciding arguments for resolve():
+Resolve with whatever data the next step needs to continue after a successful operation.
+What information does the next .then() need?
+
+Deciding arguments for reject().
+Reject with whatever helps explain or handle the failure.
+
+
+
+*/
+  </script>
+
+   <script>
+
+// async/await version - restaurant flow with multiple steps
+
+function takeOrder(dishName) {
+    console.log(`Waiter: Taking order for ${dishName}...`);
+    return new Promise((resolve, reject) => {
+        setTimeout(() => {
+            console.log(`Waiter: Order taken successfully.`);
+            resolve({ orderId: 1001, dish: dishName });
+        }, 800);
+    });
+}
+
+function checkIngredients(order) {
+    console.log(`Kitchen: Checking ingredients for ${order.dish}...`);
+    return new Promise((resolve, reject) => {
+        setTimeout(() => {
+            const hasIngredients = true;
+            if (hasIngredients) {
+                console.log(`Kitchen: All ingredients available.`);
+                resolve(order);
+            } else {
+                reject("Out of tomatoes!");
+            }
+        }, 1200);
+    });
+}
+
+function cookFood(order) {
+    console.log(`Kitchen: Started cooking ${order.dish}...`);
+    return new Promise((resolve, reject) => {
+        setTimeout(() => {
+            console.log(`Kitchen: ${order.dish} is cooked!`);
+            reject("error happend"); // ❌ intentional failure
+        }, 2500);
+    });
+}
+
+function packFood(order) {
+    console.log(`Kitchen: Packing ${order.dish}... 📦`);
+    return new Promise((resolve, reject) => {
+        setTimeout(() => {
+            console.log(`Kitchen: Food packed and ready to hand over.`);
+            resolve({ ...order, status: "packed", readyTime: new Date() });
+        }, 900);
+    });
+}
+
+
+async function restaurantFlow() {
+    try {
+        const order = await takeOrder("Burger");
+
+        const orderWithIngredients = await checkIngredients(order);
+
+        const cookedOrder = await cookFood(orderWithIngredients); // ❌ error here
+
+        const finalOrder = await packFood(cookedOrder); // ⛔ skipped
+
+        console.log("");
+        console.log("╔════════════════════════════════════╗");
+        console.log("║         FOOD IS READY!             ║");
+        console.log(`║   ${finalOrder.dish} for order #${finalOrder.orderId}   ║`);
+        console.log("║   You can come pick it up now!     ║");
+        console.log("╚════════════════════════════════════╝");
+        console.log("Customer starts eating! 😋🍔");
+
+    } catch (err) {
+        console.log("Cooking failed:", err);
+    }
+}
+
+restaurantFlow();
+/*
+async/await 
+does NOT change how Promises work.
+It only changes how you write async code.
+Think of it as:
+“Pause here until the Promise settles, then continue.”
+So: await waits for resolve
+if the Promise rejects, control jumps to catch
+👉 Same behavior, cleaner syntax
+👉 Promises still exist under the hood
+async/await :
+- are syntactic sugar for promises
+- makes async code look more like sync code
+
+To use async/await, we create Promise-based functions and call them inside an async function using await, passing resolved values to the next step.
+
+*/
+   </script>
+
+   
+  <script>
+    // const userLeft = false;
+    // const userWatchingCatMeme = false;
+    // function watchTutorialCallback(callback, errorCallback) {
+    //   if (userLeft) {
+    //     errorCallback({
+    //       name: "User Left",
+    //       message: ":(",
+    //     });
+    //   } else if (userWatchingCatMeme) {
+    //     errorCallback({
+    //       name: "User Watching Cat Meme",
+    //       message: "WebDevSimplified < Cat",
+    //     });
+    //   } else {
+    //     callback("Thumbs up and Subscribe");
+    //   }
+    // }
+    // watchTutorialCallback(
+    //   (message) => {
+    //     console.log("Success: " + message);
+    //   },
+    //   (error) => {
+    //     console.log(error.name + " " + error.message);
+    //   },
+    // );
+    /*if hello fucntion takes a lot of time to process js doesnt wait for it excuets the goodbaye function. 
+for : 
+hello();
+goodbaye();
+function hello() {
+    setTimeout(function() {
+        console.log("hello")
+    }, 1000);
+}
+
+function goodbaye() {
+    console.log("goodbaye")
+}
+Output:
+        goodbaye
+        hello
+but the output should be the other way around.JavaScript does NOT care that a function is called “callback”.
+It only cares WHERE and WHEN you CALL it.
+    sum(displayResult,1,2);
+ function sum (callback,x,y){
+    let result = x + y;
+    callback(result);
+ }
+
+ function displayResult(result){
+    console.log(result);
+ }
+    here first calculation is doen then the callback function is called with the result.
+problem with callback is that it can lead to callback inside callback callback inside callback..."callback hell" if there are many nested callbacks.wich makes the code hard to read and maintain.
+*/
+  </script>
+</html>
