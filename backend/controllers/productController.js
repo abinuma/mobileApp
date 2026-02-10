@@ -4,7 +4,15 @@ import productModel from "../models/productModel.js";
 
 const addProduct = async (req, res) => {
   try {
-    const { name, description, price, category,subCategory, sizes, bestseller } = req.body;
+    const {
+      name,
+      description,
+      price,
+      category,
+      subCategory,
+      sizes,
+      bestseller,
+    } = req.body;
 
     const image1 = req.files.image1 && req.files.image1[0];
     const image2 = req.files.image2 && req.files.image2[0];
@@ -30,11 +38,11 @@ const addProduct = async (req, res) => {
       category,
       price: Number(price),
       subCategory,
-      bestseller: bestseller === "true"? true : false,
-      sizes: JSON.parse(sizes),//used to convert stringified array back to actual array(because Data coming from req.body is ALWAYS a string)
+      bestseller: bestseller === "true" ? true : false,
+      sizes: JSON.parse(sizes), //used to convert stringified array back to actual array(because Data coming from req.body is ALWAYS a string)
       image: imagesUrl,
-      date: Date.now()
-    }
+      date: Date.now(),
+    };
     console.log(productData);
 
     const product = new productModel(productData);
@@ -48,14 +56,37 @@ const addProduct = async (req, res) => {
 
 // function for list products
 const listProducts = async (req, res) => {
-  
+  try {
+    const products = await productModel.find();
+    res.json({ success: true, products });
+  } catch (error) {
+    console.log(error);
+    res.json({ success: false, message: error.message });
+  }
 };
 
 // function for removing product
-const removeProduct = (req, res) => {};
+const removeProduct = async (req, res) => {
+  try {
+    await productModel.findByIdAndDelete(req.body.id);
+    res.json({ success: true, message: "Product removed" });
+  } catch (error) {
+    console.log(error);
+    res.json({ success: false, message: error.message });
+  }
+};
 
 // function for single product info
-const singleProduct = (req, res) => {};
+const singleProduct = async (req, res) => {
+  try {
+    const {productId} = req.body;
+    const product = await productModel.findById(productId);
+    res.json({ success: true, product });
+  } catch (error) {
+    console.log(error);
+    res.json({ success: false, message: error.message });
+  }
+};
 
 export { listProducts, addProduct, removeProduct, singleProduct };
 
@@ -143,4 +174,5 @@ If you put async before the arrow function inside .map()
 → you automatically get an array of promises
 → you must use Promise.all() if you want to wait for all of them to resolve before proceeding.here .map is used to transform each image file object into its corresponding Cloudinary URL asynchronously. Since each upload returns a Promise, we end up with an array of Promises that we can wait on using Promise.all() to get the final array of URLs once all uploads are complete.
 
+const {productId} = req.body;//this is short form of const productId = req.body.productId; ES6 object destructuring
  */

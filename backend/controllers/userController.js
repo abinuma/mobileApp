@@ -78,7 +78,23 @@ const registerUser = async (req, res) => {
 };
 
 //Route for admin login
-const adminLogin = async (req, res) => {};
+const adminLogin = async (req, res) => {
+  try {
+    const { email, password } = req.body;
+    if (
+      email === process.env.ADMIN_EMAIL &&
+      password === process.env.ADMIN_PASSWORD
+    ) {
+      const token = jwt.sign(email + password, process.env.JWT_SECRET);
+      res.json({ success: true, token });
+    } else {
+      res.json({ success: false, message: "Invalid credentials" });
+    }
+  } catch (error) {
+    console.log(error);
+    res.json({ success: false, message: error.message });
+  }
+};
 
 export { loginUser, registerUser, adminLogin };
 
@@ -110,6 +126,19 @@ Payload → what it claims
 Secret → signing authority
 
 Signature → proof of authenticity
+
+header: { "alg": "HS256", "typ": "JWT" } is Base64URL-encoded.📌 Anyone can decode it
+pyload: { "id": "123", "role": "admin" }. is Base64URL-encoded.📌 Anyone can decode it
+Signature (this is the security part). HMAC(
+  base64Url(header) + "." + base64Url(payload),
+  SECRET,
+  algorithm
+)
+Inputs:
+✔ Encoded header ✔ Encoded payload ✔ Secret (server only) ✔ Algorithm (from header)
+Output:
+A cryptographic signature. This is not decodable.
+
 
 //bcrypt is used to hash password before storing it in database. hashing is a one-way function that converts plain text password into a fixed-length string of characters. even if two users have same password, their hashed passwords will be different because of salting. salting is the process of adding random data to the password before hashing it.The salt is not added to the password; it is used by the hashing algorithm.bcrypt cannot retrieve the original password because hashing is a one-way function where the salt influences the transformation, not something appended that can be removed.
 
