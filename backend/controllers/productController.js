@@ -175,4 +175,8 @@ If you put async before the arrow function inside .map()
 → you must use Promise.all() if you want to wait for all of them to resolve before proceeding.here .map is used to transform each image file object into its corresponding Cloudinary URL asynchronously. Since each upload returns a Promise, we end up with an array of Promises that we can wait on using Promise.all() to get the final array of URLs once all uploads are complete.
 
 const {productId} = req.body;//this is short form of const productId = req.body.productId; ES6 object destructuring
- */
+
+ eg.line 64 we never defined error object because on try catch block,if we give an argument for catch block, it automatically becomes the error object that contains details about the error that occurred in the try block. This is a built-in feature of JavaScript's error handling mechanism. The catch block captures any exceptions thrown in the try block and provides access to the error details through this parameter, allowing us to log it or send it back in the response as needed.
+
+ const products = await productModel.find();//here we are fetching all products from database using mongoose find() beacause we dont give any filter to it. like id or category etc. so it will return all products. if we want to filter products by category then we can do like productModel.find({category: 'shoes'}) and it will return all products with category shoes. but here we want to return all products so we just do productModel.find() without any filter.
+*/

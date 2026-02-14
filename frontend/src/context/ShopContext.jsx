@@ -1,17 +1,19 @@
 import { createContext, useEffect, useState } from "react";
-import { products } from "../assets/assets";
 import { toast } from "react-toastify";
 import { useNavigate } from "react-router-dom";
+import axios from "axios";
 
 export const ShopContext = createContext();
 
 const ShopContextProvider = (props) => {
   const currency = "$";
   const delivery_free = 10;
+  const backendUrl = import.meta.env.VITE_BACKEND_URL;
   const [search, setSearch] = useState("");
   const [showSearch, setShowSearch] = useState(false);
   const [cartItems, setCartItems] = useState({});
-  const navigate= useNavigate();
+  const [products, setProducts] = useState([]);
+  const navigate = useNavigate();
 
   const addToCart = async (itemId, size) => {
     if (!size) {
@@ -56,7 +58,7 @@ const ShopContextProvider = (props) => {
     setCartItems(cartData);
   };
 
-  const getCartAmount =  () => {
+  const getCartAmount = () => {
     let totalAmount = 0;
     for (const items in cartItems) {
       let itemInfo = products.find((product) => product._id === items);
@@ -71,6 +73,24 @@ const ShopContextProvider = (props) => {
     return totalAmount;
   };
 
+  const getProductsData = async () => {
+    try {
+      const response = await axios.get(backendUrl + "/api/product/list");
+      if (response.data.success) {
+        setProducts(response.data.products);
+      } else {
+        toast.error(response.data.message);
+      }
+    } catch (error) {
+      console.log(error);
+      toast.error(error.message);
+    }
+  };
+
+  useEffect(() => {
+    getProductsData();
+  }, []);
+
   const value = {
     products,
     currency,
@@ -84,7 +104,8 @@ const ShopContextProvider = (props) => {
     getCartCount,
     updateQuantity,
     getCartAmount,
-    navigate
+    navigate,
+    backendUrl,
   };
 
   return (
@@ -92,3 +113,20 @@ const ShopContextProvider = (props) => {
   );
 };
 export default ShopContextProvider;
+
+/*
+Render does NOT mean:
+❌ “Reload the page”
+❌ “Call useEffect”
+❌ “Fetch data”
+Render means:React runs your component function again. 
+When Do useEffect Functions Run?
+
+Important:
+Rendering happens first.After rendering finishes,React runs useEffect.
+So order is always:
+1. Render (function runs)
+2. DOM updates
+3. useEffect runs
+Effects NEVER run during render.They run AFTER render.
+*/

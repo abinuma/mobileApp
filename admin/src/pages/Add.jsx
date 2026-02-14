@@ -19,7 +19,7 @@ const Add = ({token}) => {
   const [sizes, setSizes] = useState([]);
 
   const onSubmitHandler =async (e) =>{
-    // e.preventDefault();
+    e.preventDefault();
     try {
       const formData = new FormData();
       formData.append('name',name);
