@@ -13,6 +13,7 @@ const ShopContextProvider = (props) => {
   const [showSearch, setShowSearch] = useState(false);
   const [cartItems, setCartItems] = useState({});
   const [products, setProducts] = useState([]);
+  const [token, setToken] = useState('');
   const navigate = useNavigate();
 
   const addToCart = async (itemId, size) => {
@@ -91,6 +92,12 @@ const ShopContextProvider = (props) => {
     getProductsData();
   }, []);
 
+  useEffect(()=>{
+    if (!token && localStorage.getItem('token')) {
+      setToken(localStorage.getItem('token'))
+    }
+  }, [])
+
   const value = {
     products,
     currency,
@@ -106,6 +113,9 @@ const ShopContextProvider = (props) => {
     getCartAmount,
     navigate,
     backendUrl,
+    setToken,
+    token,
+    setCartItems
   };
 
   return (
@@ -129,4 +139,6 @@ So order is always:
 2. DOM updates
 3. useEffect runs
 Effects NEVER run during render.They run AFTER render.
+so whn state cjages react re-runs the whole compoenet not only the function where the state is updated. 
 */
+//when we reload a page does all react compoenets related to that pages component reloaded?
