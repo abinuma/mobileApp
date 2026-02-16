@@ -13,7 +13,7 @@ const ShopContextProvider = (props) => {
   const [showSearch, setShowSearch] = useState(false);
   const [cartItems, setCartItems] = useState({});
   const [products, setProducts] = useState([]);
-  const [token, setToken] = useState('');
+  const [token, setToken] = useState("");
   const navigate = useNavigate();
 
   const addToCart = async (itemId, size) => {
@@ -35,6 +35,19 @@ const ShopContextProvider = (props) => {
       cartData[itemId][size] = 1;
     }
     setCartItems(cartData);
+
+    if (token) {
+      try {
+        await axios.post(
+          backendUrl + "/api/cart/add",
+          { itemId, size },
+          { headers: { Authorization: token } },
+        );
+      } catch (error) {
+        console.log(error);
+        toast.error(error.message);
+      }
+    }
   };
 
   const getCartCount = () => {
@@ -57,6 +70,18 @@ const ShopContextProvider = (props) => {
     cartData[itemId][size] = quantity;
 
     setCartItems(cartData);
+    if (token) {
+      try {
+        await axios.post(
+          backendUrl + "/api/cart/update",
+          { itemId, size, quantity },
+          { headers: { Authorization: token } },
+        );
+      } catch (error) {
+        console.log(error);
+        toast.error(error.message);
+      }
+    }
   };
 
   const getCartAmount = () => {
@@ -88,15 +113,32 @@ const ShopContextProvider = (props) => {
     }
   };
 
+  const getUserCart = async (token) => {
+    try {
+      const response = await axios.get(backendUrl + "/api/cart/get", {
+        headers: { Authorization: token },
+      });
+      if (response.data.success) {
+        setCartItems(response.data.cartData);
+      }
+    } catch (error) {
+      console.log(error);
+      toast.error(error.message);
+    }
+    console.log("this is cart items");
+    console.log(cartItems)
+  };
+
   useEffect(() => {
     getProductsData();
   }, []);
 
-  useEffect(()=>{
-    if (!token && localStorage.getItem('token')) {
-      setToken(localStorage.getItem('token'))
+  useEffect(() => {
+    if (localStorage.getItem("token")) {
+      setToken(localStorage.getItem("token"));
+      getUserCart(localStorage.getItem("token"));
     }
-  }, [])
+  }, []);
 
   const value = {
     products,
@@ -115,7 +157,7 @@ const ShopContextProvider = (props) => {
     backendUrl,
     setToken,
     token,
-    setCartItems
+    setCartItems,
   };
 
   return (
@@ -141,4 +183,3 @@ So order is always:
 Effects NEVER run during render.They run AFTER render.
 so whn state cjages react re-runs the whole compoenet not only the function where the state is updated. 
 */
-//when we reload a page does all react compoenets related to that pages component reloaded?

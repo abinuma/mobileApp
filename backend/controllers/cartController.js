@@ -1,9 +1,11 @@
-import userModel from "../models/userModel";
+import userModel from "../models/userModel.js";
 
 // add products to user cart
 const addToCart = async (req, res) => {
   try {
-    const { userId, itemId, size } = req.body;
+    const userId = req.userId;
+    // const {userId,  itemId, size } = req.body;
+    const { itemId, size } = req.body;
 
     const userData = await userModel.findById(userId);
     let cartData = await userData.cartData;
@@ -22,7 +24,6 @@ const addToCart = async (req, res) => {
     await userModel.findByIdAndUpdate(userId, { cartData });
 
     res.json({ success: true, message: "added to cart " });
-    console.log(cartData)
   } catch (error) {
     console.log(error);
     res.json({ success: false, message: error.message });
@@ -32,7 +33,8 @@ const addToCart = async (req, res) => {
 //update user cart
 const updateCart = async (req, res) => {
   try {
-    const { userId, itemId, size, quantity } = req.body;
+    const userId = req.userId;
+    const { itemId, size, quantity } = req.body;
 
     const userData = await userModel.findById(userId);
     let cartData = await userData.cartData;
@@ -50,16 +52,16 @@ const updateCart = async (req, res) => {
 
 //get user cart
 const getUserCart = async (req, res) => {
-    try {
-        const { userId } = req.body;
-        const userData = await userModel.findById(userId);
-        let cartData = await userData.cartData;
+  try {
+    const userId = req.userId;
+    const userData = await userModel.findById(userId);
+    let cartData = userData.cartData;
 
-        res.json({ success: true,  cartData });
-    } catch (error) {
-        console.log(error);
+    res.json({ success: true, cartData });
+  } catch (error) {
+    console.log(error);
     res.json({ success: false, message: error.message });
-    }
+  }
 };
 
 export { addToCart, updateCart, getUserCart };
@@ -67,6 +69,8 @@ export { addToCart, updateCart, getUserCart };
 /*
 Use DOT to access nested properties in JavaScript objects when the property name is Static, valid identifier.
 Use BRACKET when:
-Key is dynamic,Key starts with number,Key has spaces,Key comes from variable
+Key is dynamic,Key starts with number,Key has spaces,Key comes from variable.
+
+here the whole { success: true,  cartData } is the response data that the frontend receives and can access as response.data.success and response.data.cartData
 
 */
