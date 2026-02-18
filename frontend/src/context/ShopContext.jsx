@@ -7,7 +7,7 @@ export const ShopContext = createContext();
 
 const ShopContextProvider = (props) => {
   const currency = "$";
-  const delivery_free = 10;
+  const delivery_fee = 10;
   const backendUrl = import.meta.env.VITE_BACKEND_URL;
   const [search, setSearch] = useState("");
   const [showSearch, setShowSearch] = useState(false);
@@ -125,8 +125,6 @@ const ShopContextProvider = (props) => {
       console.log(error);
       toast.error(error.message);
     }
-    console.log("this is cart items");
-    console.log(cartItems)
   };
 
   useEffect(() => {
@@ -143,7 +141,7 @@ const ShopContextProvider = (props) => {
   const value = {
     products,
     currency,
-    delivery_free,
+    delivery_fee,
     search,
     setSearch,
     showSearch,
