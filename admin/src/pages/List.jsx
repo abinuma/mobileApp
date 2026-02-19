@@ -23,7 +23,7 @@ const List = ({token}) => {
 
   const removeProduct = async (id) => {
     try {
-      const response = await axios.post (backendUrl + '/api/product/remove', {id}, {
+      const response = await axios.delete(backendUrl + `/api/product/${id}`, {
     headers: {
       authorization: token
     }
@@ -80,4 +80,17 @@ export default List;
 /*
 we use axios to make HTTP requests to our backend API. In this case, we use axios.get to fetch the list of products from the endpoint /api/product/list and axios.post to send a request to remove a product by its ID. Axios simplifies the process of making HTTP requests and handling responses in React applications.
 
+when admin Click "X" in React
+<p onClick={()=>removeProduct(item._id)}>
+If _id = "abc123"
+This runs:
+removeProduct("abc123")
+Inside:
+
+axios.delete(backendUrl + `/api/product/${id}`, {
+  headers: { authorization: token }});
+So the browser sends this HTTP request:
+DELETE /api/product/abc123
+Headers:
+authorization: Token. ----> now go to server.js.
 */

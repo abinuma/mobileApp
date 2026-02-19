@@ -72,7 +72,7 @@ const ShopContextProvider = (props) => {
     setCartItems(cartData);
     if (token) {
       try {
-        await axios.post(
+        await axios.patch(
           backendUrl + "/api/cart/update",
           { itemId, size, quantity },
           { headers: { Authorization: token } },

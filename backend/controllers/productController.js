@@ -68,7 +68,7 @@ const listProducts = async (req, res) => {
 // function for removing product
 const removeProduct = async (req, res) => {
   try {
-    await productModel.findByIdAndDelete(req.body.id);
+    await productModel.findByIdAndDelete(req.params.id);
     res.json({ success: true, message: "Product removed" });
   } catch (error) {
     console.log(error);
@@ -179,4 +179,13 @@ const {productId} = req.body;//this is short form of const productId = req.body.
  eg.line 64 we never defined error object because on try catch block,if we give an argument for catch block, it automatically becomes the error object that contains details about the error that occurred in the try block. This is a built-in feature of JavaScript's error handling mechanism. The catch block captures any exceptions thrown in the try block and provides access to the error details through this parameter, allowing us to log it or send it back in the response as needed.
 
  const products = await productModel.find();//here we are fetching all products from database using mongoose find() beacause we dont give any filter to it. like id or category etc. so it will return all products. if we want to filter products by category then we can do like productModel.find({category: 'shoes'}) and it will return all products with category shoes. but here we want to return all products so we just do productModel.find() without any filter.
-*/
+
+flow continued from productRoute.js:
+Controller Runs
+const removeProduct = async (req, res) => {
+  await productModel.findByIdAndDelete(req.params.id);
+}
+Now:req.params.id === "abc123"
+So MongoDB executes:Delete product where _id = "abc123"
+
+ */

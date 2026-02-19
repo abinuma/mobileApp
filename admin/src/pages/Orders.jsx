@@ -14,9 +14,9 @@ const Orders = ({ token }) => {
       return null;
     }
     try {
-      const response = await axios.post(
+      const response = await axios.get(
         backendUrl + "/api/order/list",
-        {},
+        
         { headers: { Authorization: token } },
       );
       if (response.data.success) {
@@ -31,7 +31,7 @@ const Orders = ({ token }) => {
 
   const statusHandler = async (event, orderId) => {
     try {
-      const response = await axios.post(
+      const response = await axios.patch(
         backendUrl + "/api/order/status",
         { orderId, status: event.target.value },
         { headers: { Authorization: token } },

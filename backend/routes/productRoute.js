@@ -21,7 +21,7 @@ productRouter.post(
   ]),
   addProduct,
 );
-productRouter.post("/remove", adminAuth, removeProduct);
+productRouter.delete("/:id", adminAuth, removeProduct);
 productRouter.post("/single", singleProduct);
 productRouter.get("/list", listProducts);
 
@@ -63,4 +63,32 @@ Multer doesn’t know what fields to process
 No file parsing happens
 req.files will be undefined
 
+prodcuRouter receives the flow from server.js:
+productRouter Matches the Route:productRouter.delete("/:id", adminAuth, removeProduct);
+What does /:id mean?It means:"Match ANY value after the slash and call it id"
+Now Express automatically creates:
+req.params = {
+  id: "abc123"
+  }
+. now go to removeProduct function in productController.js. ----->productController.js
+let us assume 
+productRouter.delete("/:id", adminAuth, removeProduct);
+productRouter.delete("/old", old);
+productRouter.delete("/unused", unuse);
+productRouter.delete("/purchased/completed", complet);
+productRouter.post("/single", singleProduct);
+productRouter.get("/list", listProducts);
+here
+productRouter.delete("/:id", ...)
+That means:“For ANY DELETE request with ONE path segment after /api/product, treat it as an id.”
+for old express check from top to bottom
+Method matches ✅
+Path /old matches /:id ✅
+then id = "old"
+It stops here.It NEVER reaches:productRouter.delete("/old", old);So your /old route becomes useless it will never run.the same happens for productRouter.delete("/unused", unuse); .
+but productRouter.delete("/purchased/completed", complet); will run successfully. because this has TWO segments:/purchased/completed .this doesnot match /:id because /:id only matches ONE segment. and the remainig ones are also not affected because they have different methods (post and get)
+so to remove this professionaly we write static routes first and dynamic routes at the end.like this:
+productRouter.delete("/old", old);
+productRouter.delete("/unused", unuse);
+productRouter.delete("/:id", removeProduct);
 */
