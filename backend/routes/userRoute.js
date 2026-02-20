@@ -5,7 +5,7 @@ const userRouter = express.Router()
 
 userRouter.post('/register', registerUser)
 userRouter.post('/login', loginUser)
-userRouter.post('/admin', adminLogin)//where is the admin login route called in the frontend?
+userRouter.post('/admin', adminLogin)
 
 export default userRouter;
 

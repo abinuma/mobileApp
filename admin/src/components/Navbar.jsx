@@ -3,9 +3,14 @@ import logo from "../assets/logo.png";
 import {assets} from "../assets/assets";
 
 const Navbar = ({setToken}) => {
+
+  const handleLogoClick = () => {
+    window.location.reload(); // refresh page
+  };
+
   return (
-    <div className="flex items-center py-2 px-[4%] justify-between">
-      <img className="w-[max(5%,80px)]" src={assets.logo} alt="" />
+    <div className="flex items-center py-5 px-[4%] justify-between">
+      <img className="w-[max(15%,80px)] cursor-pointer" src={assets.logo} alt="" onClick={handleLogoClick} />
 
       <button onClick={()=>setToken('')} className="bg-gray-600 text-white px-5 py-2 sm:px-7 sm:py-2 rounded-full text-xs sm:text-sm cursor-pointer">
         Logout
