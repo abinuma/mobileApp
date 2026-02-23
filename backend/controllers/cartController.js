@@ -65,12 +65,3 @@ const getUserCart = async (req, res) => {
 };
 
 export { addToCart, updateCart, getUserCart };
-
-/*
-Use DOT to access nested properties in JavaScript objects when the property name is Static, valid identifier.
-Use BRACKET when:
-Key is dynamic,Key starts with number,Key has spaces,Key comes from variable.
-
-here the whole { success: true,  cartData } is the response data that the frontend receives and can access as response.data.success and response.data.cartData
-
-*/

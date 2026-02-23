@@ -9,4 +9,3 @@ userRouter.post('/admin', adminLogin)
 
 export default userRouter;
 
-// Each route is associated with a specific controller function that handles the request logic.

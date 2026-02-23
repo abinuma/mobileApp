@@ -53,20 +53,3 @@ const Login = ({setToken}) => {
 
 export default Login;
 
-
-/*e.target = the <form> element itself that fiers the event
-e.target[0] = the first input element in the form (email input).e.target.email = finds the input that has name="email" (like a property lookup).value = reads whatever the user typed (what the DOM currently holds),so this e.target.email.value,e.target.password.value used to get values of uncontrolled form inputs.So this only works if you add the name attribute:like name="email" and name="password" to the respective input fields.
-e.preventDefault() is used to prevent the default behavior of the form submission, which is to reload the page.usually event object is passed to any event handeler function as a first argument.
-
-axios.post() Syntax:axios.post(URL, DATA). 
-First argument = URL
-Where to send the request → your Express server login route
-Second argument = {email, password}
-This is the body (payload) that will be sent to the backend.the data {email: email,password: password} is automatically converted to JSON by Axios as:
-{ "email": "admin@email.com", "password": "123456"}. It sends a POST request with JSON body.
-
-Axios is an HTTP client.That means:
-👉 It helps your frontend send HTTP requests
-👉 And receive HTTP responses from your backend
-
-*/

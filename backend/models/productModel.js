@@ -18,7 +18,3 @@ const productModel = mongoose.models.product || mongoose.model("product", produc
 
 export default productModel;
 
-/*
-in mongoose.model("product", productSchema);
-The first argument "product" is the model name.What Mongoose does internally:Takes "product",Converts it to lowercase,Pluralizes it
-*/

@@ -163,21 +163,3 @@ const ShopContextProvider = (props) => {
   );
 };
 export default ShopContextProvider;
-
-/*
-Render does NOT mean:
-❌ “Reload the page”
-❌ “Call useEffect”
-❌ “Fetch data”
-Render means:React runs your component function again. 
-When Do useEffect Functions Run?
-
-Important:
-Rendering happens first.After rendering finishes,React runs useEffect.
-So order is always:
-1. Render (function runs)
-2. DOM updates
-3. useEffect runs
-Effects NEVER run during render.They run AFTER render.
-so whn state cjages react re-runs the whole compoenet not only the function where the state is updated. 
-*/

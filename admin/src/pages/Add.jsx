@@ -256,25 +256,3 @@ const Add = ({token}) => {
 };
 
 export default Add;
-/*
-The browser only allows file selection through:
-<input type="file" /> For security reasons.An <img> tag:<img /> Can only display images.
-not only images or files to get any input from user we need to use <input> tag with appropriate type attribute like text, number, email, password etc. 
-
-When you use:
-<input type="file" />. and select a file, the browser gives you:e.target.files.This is a FileList object.Even if the user selects only ONE file,the browser STILL returns a list.Why Always a List? Because the same input can allow multiple files:
-To say an input field is controlled its value should come from React state.eg. 
-<input
-  value={stateValue}
-  onChange={(e) => setStateValue(e.target.value)}
-/>
-Functional setState is required when the new state depends on the previous state. So yes — React “provides” prev for you when you use this functional update form of state.
-
-prev is always the “current value” of that particular piece of state, and its type comes from the initial state you gave to useState while initializing.
-
-because we cant send arrays or objects directly in form data (request body) we need to stringify them first
-(eg.formData.append('sizes',JSON.stringify(sizes));) before appending to form data and on the server side we can parse them back to original form.
-
-what and why is image1 && formData.append('image1',image1);
-? this is called short circuit evaluation. It means that if image1 is truthy (not false, null, undefined, 0, NaN, or an empty string), then formData.append('image1', image1) will be executed. If image1 is falsy, the append operation will be skipped. This is a common pattern to conditionally execute code based on the truthiness of a variable.this is helpfull if we selected only one or two images and we dont want to send empty values for the unselected images to the backend. So we only append the images that are selected by the user to the form data.
-*/

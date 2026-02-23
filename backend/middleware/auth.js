@@ -19,10 +19,3 @@ const authUser = async (req,res,next) => {
 }
 
 export default authUser;
-
-/*
-This middleware checks for a JWT token in the request headers, verifies it, and if valid, attaches the user ID to the request body for use in subsequent controllers. If the token is missing or invalid, it responds with an error message. This ensures that only authenticated users can access certain routes.
-
-jwt.verify() 👉 returns the decoded payload that was originally signed inside the token.
-
-*/

@@ -17,8 +17,3 @@ const adminAuth = async (req,res,next) => {
 }
 
 export default adminAuth;
-
-/*
-after we successfully verify the token we call next(). next() means: “I’m done here — pass control to the next middleware or route handler.”
-
-*/

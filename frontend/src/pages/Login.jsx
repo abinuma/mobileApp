@@ -106,18 +106,3 @@ const Login = () => {
 };
 
 export default Login;
-
-/*
-Why do we need value={name}?
-What happens if you ONLY use onChange?
-<input
-  onChange={(e) => setName(e.target.value)}
-/>. Now the input is uncontrolled.Meaning:The browser controls what appears inside the input.React just “listens” and stores the value.React is NOT controlling what is displayed. The input works, but React is not the source of truth.
-What happens when you ALSO add value={name}?
-<input
-  value={name}
-  onChange={(e) => setName(e.target.value)}
-/>. Now:React state (name) becomes the single source of truth.Whatever is inside name is what appears in the input. The input is now controlled by React
-
-
-*/

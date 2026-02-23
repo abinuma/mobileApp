@@ -30,23 +30,3 @@ app.get('/', (req,res)=> {
 
 app.listen(port,()=> console.log('Server started on port : ' + port))
 
-
-/* the main purpose of this file is to set up and start an Express server that connects to a MongoDB database and configures Cloudinary for media management.configure here means .why do we configure cloudinary
-
-this line:
-app.use('/api/user', userRouter);
-Means:“For any request that starts with /api/user,
-hand it over to userRouter.”. Why do we do it this way?
-✅ Clean structure
-✅ Easier to scale
-✅ Separate concerns
-app.use() allows the backend to read json from requests, modularize routes, making the codebase cleaner and more maintainable.
-
-Express Receives the flow from the List.jsx file:
-1. Admin clicks "X" to delete a product.
-2. React calls removeProduct(id) which sends a DELETE request to /api/product/:id.
-In main server:app.use('/api/product', productRouter)
-This means:Any request that starts with /api/product
-→ send it to productRouter. now go to ----> productRouter.js
-
-*/

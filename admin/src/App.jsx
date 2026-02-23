@@ -46,13 +46,3 @@ const App = () => {
 };
 
 export default App;
-
-/*
-React state → temporary memory. localStorage → permanent memory (until user clears browser). so we use this
-  useEffect(() => {
-    localStorage.setItem('token', token)
-  },[token]) 
-to persist the token across page reloads and to stay logged in. 
-When you press refresh (F5):
-The browser destroys the current React app;All JavaScript memory is cleared;React starts again from the beginning;Every useState() goes back to its initial value.Why Does This Happen?Because:React state is stored in RAM (temporary memory).When page reloads:RAM is cleared.
-*/
