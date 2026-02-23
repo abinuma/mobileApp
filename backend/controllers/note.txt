@@ -1,3 +1,6 @@
+
+
+
 import { useContext, useState } from "react";
 import { assets } from "../assets/assets";
 import { NavLink, Link } from "react-router-dom";
@@ -24,9 +27,9 @@ const Navbar = () => {
   return (
     
     <div className="flex items-center justify-between py-5 px-4 font-medium  ">
-      <i   >
-        <img src={assets.logo} className="w-[max(25%,80px)] cursor-pointer" onClick={() => navigate("/")} />
-      </i>
+      <Link to="/">
+        <img src={assets.logo} className="w-[max(25%,80px)]" />
+      </Link>
       <ul className="hidden sm:flex gap-5 text-sm text-gray-700 mr-3">
         <NavLink to="/" className="flex flex-col items-center gap-1">
           <p>HOME</p>
@@ -46,14 +49,12 @@ const Navbar = () => {
         </NavLink>
       </ul>
       <div className="flex items-center gap-6">
-        {(location.pathname.includes("collection") || location.pathname === "/cart" || location.pathname === "/"  ) && (
-    <img
-        onClick={() => setShowSearch(true)}
-        src={assets.search_icon}
-        className="w-5 cursor-pointer"
-        alt=""
-    />
-)}
+        <img
+          onClick={() => setShowSearch(true)}
+          src={assets.search_icon}
+          className="w-5 cursor-pointer"
+          alt=""
+        />
         <div className="group relative">
           <img
             onClick={() => (token ? null : navigate("/login"))}
@@ -91,7 +92,7 @@ const Navbar = () => {
         <img
           onClick={() => setVisible(true)}
           src={assets.menu_icon}
-          className="w-6 cursor-pointer sm:hidden pr-1 mr-4"
+          className="w-5 cursor-pointer sm:hidden ml-3"
           alt=""
         />
       </div>

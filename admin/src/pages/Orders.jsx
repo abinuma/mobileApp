@@ -9,6 +9,9 @@ import { assets } from "../assets/assets";
 const Orders = ({ token }) => {
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(false);
+  // -------- Pagination state (NEW)
+  const [currentPage, setCurrentPage] = useState(1); 
+  const [itemsPerPage, setItemsPerPage] = useState(10);
 
   const fetchAllOrders = async () => {
     if (!token) {
@@ -52,6 +55,33 @@ const Orders = ({ token }) => {
     fetchAllOrders();
   }, [token]);
 
+   // -------- Calculate pagination (NEW)
+  const indexOfLastItem = currentPage * itemsPerPage;
+  const indexOfFirstItem = indexOfLastItem - itemsPerPage; 
+  const currentItems = orders.slice(indexOfFirstItem, indexOfLastItem);
+  const totalPages = Math.ceil(orders.length / itemsPerPage);
+
+  const paginate = (pageNumber) => setCurrentPage(pageNumber); 
+
+   // -------- Helper to render page numbers with ellipsis (NEW)
+  // -------- Helper to render page numbers with fixed ellipsis logic
+const renderPageNumbers = () => {
+  const pageNumbers = [];
+
+  if (totalPages <= 4) {
+    for (let i = 1; i <= totalPages; i++) {
+      pageNumbers.push(i);
+    }
+  } else {
+    pageNumbers.push(1, 2, 3);
+    pageNumbers.push("...");
+    pageNumbers.push(totalPages);
+  }
+
+  return pageNumbers; // ✅ CORRECT
+};
+
+
   return (
     <div>
       <h3 className="mb-4 text-xl ">Order Page</h3>
@@ -70,7 +100,7 @@ const Orders = ({ token }) => {
         </div>
       ) : (
         <div>
-          {orders.map((order, index) => (
+          {currentItems.map((order, index) => (
             <div
               className=" grid 
   grid-cols-1 
@@ -155,6 +185,56 @@ const Orders = ({ token }) => {
               </select>
             </div>
           ))}
+
+          {/* ---------- Pagination Controls (NEW) */}
+          {totalPages > 1 && (
+            <div className="flex justify-center items-center gap-2 mt-6 flex-wrap">
+              <button
+                onClick={() => currentPage > 1 && paginate(currentPage - 1)}
+                className={`w-12 h-12 cursor-pointer rounded-full border flex justify-center items-center transition-colors ${
+                  currentPage === 1
+                    ? "border-purple-300 text-purple-300 cursor-not-allowed"
+                    : "border-purple-700 text-purple-700 hover:bg-neutral-200 "
+                }`}
+              >
+                &lt;
+              </button>
+
+              {renderPageNumbers().map((num, idx) =>
+                num === "..." ? (
+                  <span key={idx} className="text-purple-700 px-1">
+                    ...
+                  </span>
+                ) : (
+                  <button
+                    key={idx}
+                    onClick={() => paginate(num)}
+                    className={`px-4 py-2 rounded-lg font-medium transition-all duration-200 ${
+                      currentPage === num
+                        ? "text-purple-700 underline underline-offset-4 cursor-default"
+                        : "text-purple-700 hover:bg-neutral-200 hover:shadow-md"
+                    }`}
+                  >
+                    {num}
+                  </button>
+                ),
+              )}
+
+              <button
+                onClick={() =>
+                  currentPage < totalPages && paginate(currentPage + 1)
+                }
+                className={`w-12 h-12 cursor-pointer rounded-full border flex justify-center items-center transition-colors ${
+                  currentPage === totalPages
+                    ? "border-purple-300 text-purple-300 cursor-not-allowed"
+                    : "border-purple-700 text-purple-700 hover:bg-neutral-200 "
+                }`}
+              >
+                &gt;
+              </button>
+            </div>
+          )}
+
         </div>
       )}
     </div>

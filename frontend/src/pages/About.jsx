@@ -16,10 +16,10 @@ const About = () => {
           alt=""
         />
         <div className="flex flex-col justify-center gap-6 md:w-2/4 text-gray-600">
-          <p>Forevr was born out of passion for innovvation and a desire to revolutionize the way shop online.Our journy began with a simple idea:to provide a platform where customers can easily discover, explore,and purchase a wide range of products from the comfort of their homes. </p>
-          <p>Since our inception, we've worked tirelessly to curate a diverse selection of high-quality products that cater to evry taste and prefrence .From fashion and beauty to electornics and home essentials,we offer an extensive colletion sourced from trusted brands and suppliers. </p>
+          <p>At Crown Wear, we believe style is a reflection of confidence and individuality. Our brand was created to bring modern, comfortable, and high-quality fashion to people who want to look good and feel even better every day.</p>
+          <p>At Crown Wear, we focus on carefully selected designs, premium fabrics, and attention to detail to ensure every piece meets our standards. Whether you're shopping for everyday essentials or standout pieces, we aim to offer collections that combine comfort, trend, and durability.</p>
           <b className="text-gray-800">Our Mission</b>
-          <p>Our mission at Forevr is to empower customer with choice,convenience, and confidence. we're dedicated to providing a seamless shopping expreince that exceeds expections , from browsing and ordering to delivery and beyond. </p>
+          <p>Our mission at Crown Wear is to deliver stylish, affordable, and high-quality clothing that empowers people to express themselves with confidence while enjoying a smooth and satisfying shopping experience.</p>
         </div>
       </div>
       <div className="text-xl py-4">

@@ -32,6 +32,14 @@ const addProduct = async (req, res) => {
       }),
     );
 
+    const sizeOrder = [ "S", "M", "L", "XL", "XXL"];
+
+// parse sizes
+let parsedSizes = JSON.parse(sizes);
+
+// sort according to predefined order
+parsedSizes.sort((a, b) => sizeOrder.indexOf(a) - sizeOrder.indexOf(b));
+
     const productData = {
       name,
       description,
@@ -39,7 +47,8 @@ const addProduct = async (req, res) => {
       price: Number(price),
       subCategory,
       bestseller: bestseller === "true" ? true : false,
-      sizes: JSON.parse(sizes), //used to convert stringified array back to actual array(because Data coming from req.body is ALWAYS a string)
+      sizes: parsedSizes, // ✅ sorted sizes
+ //used to convert stringified array back to actual array(because Data coming from req.body is ALWAYS a string)
       image: imagesUrl,
       date: Date.now(),
     };

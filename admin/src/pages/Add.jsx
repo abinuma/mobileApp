@@ -181,7 +181,7 @@ const Add = ({token}) => {
 
       <div>
         <p className="mb-2">Product sizes</p>
-        <div className="flex gap-3">
+        <div className="flex gap-3 flex-wrap">
           <div
             onClick={() =>
               setSizes((prev) =>

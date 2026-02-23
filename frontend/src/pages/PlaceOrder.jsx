@@ -89,6 +89,8 @@ const PlaceOrder = () => {
         }
 
           break;
+          case "razorpay":
+            toast.error("Razorpay method is currently unavailable. Please choose another payment method.")
 
         default:
           break;
