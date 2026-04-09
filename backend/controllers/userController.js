@@ -1,6 +1,7 @@
 import validator from "validator";
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
+import mongoose from "mongoose";
 import userModel from "../models/userModel.js";
 
 const createToken = (id) => {
@@ -11,6 +12,7 @@ const createToken = (id) => {
 const loginUser = async (req, res) => {
   try {
     const { email, password } = req.body;
+    console.log(`[Diagnostic] Login check for ${email} in DB: ${mongoose.connection.name}`);
     const user = await userModel.findOne({ email });
     if (!user) {
       return res.json({ success: false, message: "User doesn't exist" });
@@ -34,6 +36,7 @@ const loginUser = async (req, res) => {
 const registerUser = async (req, res) => {
   try {
     const { name, email, password } = req.body;
+    console.log(`[Diagnostic] Attempting to register ${email} in DB: ${mongoose.connection.name} (Host: ${mongoose.connection.host})`);
 
     //checking user already exist or not
     const exists = await userModel.findOne({ email });
