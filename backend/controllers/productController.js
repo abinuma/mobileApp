@@ -99,6 +99,7 @@ const addProduct = async (req, res) => {
 const listProducts = async (req, res) => {
   try {
     const products = await productModel.find();
+    console.log(`[DEBUG] listProducts called. Database: ${mongoose.connection.name}. Found ${products.length} products.`);
     res.json({ success: true, products });
   } catch (error) {
     console.log(error);
