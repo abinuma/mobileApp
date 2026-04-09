@@ -107,10 +107,15 @@ const ShopContextProvider = (props) => {
 
   const getProductsData = async () => {
     try {
-      console.log(`[API Call] Fetching products: ${backendUrl}/api/product/list`);
+      console.log('------------------------------------------');
+      console.log(`[DEBUG] API CALL: Fetching products from ${backendUrl}/api/product/list`);
       const response = await axios.get(backendUrl + "/api/product/list");
-      console.log('[API Success] Fetch products response:', response.data.success ? 'Success' : 'Failed');
+      
       if (response.data.success) {
+        console.log(`[DEBUG] SUCCESS: Received ${response.data.products.length} products.`);
+        if (response.data.products.length > 0) {
+           console.log(`[DEBUG] SAMPLE ITEM: ${response.data.products[0].name} (ID: ${response.data.products[0]._id})`);
+        }
         setProducts(response.data.products);
       } else {
         Alert.alert("Error", response.data.message);
