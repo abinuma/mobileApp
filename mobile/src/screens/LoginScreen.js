@@ -44,12 +44,11 @@ const LoginScreen = ({ navigation }) => {
     try {
       // 1. ADMIN INTERCEPTION LOGIC (Quick login for admin email)
       if (currentState === 'Login' && email === 'admin@abinu.com') {
-          console.log(`[API Call] Admin login attempt: ${backendUrl}/api/user/admin`);
+          console.log(`[Diagnostic] Admin login attempt for: ${email} at ${backendUrl}/api/user/admin`);
           const response = await axios.post(backendUrl + '/api/user/admin', { email, password });
-          console.log('[API Response] Admin login success:', response.data.success);
+          console.log('[Diagnostic Result] Admin login success:', response.data.success, "| Message:", response.data.message);
           if (response.data.success) {
             await AsyncStorage.setItem('adminToken', response.data.token);
-            console.log("[Diagnostic Auth] Admin Token stored successfully from LoginScreen interception");
             // Navigate straight to Admin Dashboard
             navigation.reset({
               index: 0,
@@ -64,17 +63,20 @@ const LoginScreen = ({ navigation }) => {
 
       // 2. STANDARD USER LOGIC
       if (currentState === 'Sign Up') {
-        console.log(`[API Call] Registering user: ${backendUrl}/api/user/register`);
+        console.log(`[Diagnostic] Registering user: ${name} (${email}) at ${backendUrl}/api/user/register`);
         const response = await axios.post(backendUrl + '/api/user/register', { name, email, password });
+        console.log('[Diagnostic Result] Registration status:', response.data.success, "| Message:", response.data.message);
         if (response.data.success) {
           setToken(response.data.token);
           await AsyncStorage.setItem('token', response.data.token);
+          Alert.alert("Success", "Account created successfully!");
         } else {
           Alert.alert('Error', response.data.message);
         }
       } else {
-        console.log(`[API Call] User login attempt: ${backendUrl}/api/user/login`);
+        console.log(`[Diagnostic] User login attempt: ${email} at ${backendUrl}/api/user/login`);
         const response = await axios.post(backendUrl + '/api/user/login', { email, password });
+        console.log('[Diagnostic Result] Login status:', response.data.success, "| Message:", response.data.message);
         if (response.data.success) {
           setToken(response.data.token);
           await AsyncStorage.setItem('token', response.data.token);
@@ -106,7 +108,10 @@ const LoginScreen = ({ navigation }) => {
               title="My Orders"
               left={props => <ShoppingBag color="#000" size={20} style={{ marginTop: 10 }} />}
               right={props => <List.Icon {...props} icon="chevron-right" />}
-              onPress={() => navigation.navigate('Orders')}
+              onPress={() => {
+                console.log('[Navigation] Navigating to My Orders from Profile');
+                navigation.navigate('Orders');
+              }}
               style={styles.menuItem}
             />
             <Divider />

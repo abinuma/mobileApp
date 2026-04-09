@@ -75,10 +75,18 @@ const AddProductScreen = () => {
 
         try {
             if (Platform.OS === 'web') {
+                console.log(`[Diagnostic] Processing WEB BLOB for ${fieldName}:`, imageAsset.uri);
                 const response = await fetch(imageAsset.uri);
                 const blob = await response.blob();
-                const fileType = imageAsset.uri.split('.').pop() || 'jpg';
-                return new File([blob], `${fieldName}.${fileType}`, { type: blob.type });
+                
+                // Get extension from mime type
+                let extension = 'jpg';
+                if (blob.type === 'image/png') extension = 'png';
+                if (blob.type === 'image/gif') extension = 'gif';
+                if (blob.type === 'image/webp') extension = 'webp';
+                
+                console.log(`[Diagnostic] Blob processed: type=${blob.type}, size=${blob.size}, detected_ext=${extension}`);
+                return new File([blob], `${fieldName}.${extension}`, { type: blob.type });
             } else {
                 const uriParts = imageAsset.uri.split('.');
                 const fileType = uriParts[uriParts.length - 1];
@@ -95,7 +103,15 @@ const AddProductScreen = () => {
     };
 
     const onSubmitHandler = async () => {
-        // Detailed check for exactly what is missing
+        // Log all fields to see exactly what's going on
+        console.log("[Diagnostic Validation Status]:", {
+            name: name ? "PRESENT" : "MISSING",
+            description: description ? "PRESENT" : "MISSING",
+            price: price ? "PRESENT" : "MISSING",
+            image1: image1 ? "PRESENT" : "MISSING",
+            image1_uri: image1?.uri || "N/A"
+        });
+
         if (!name || !description || !price || !image1) {
             let missing = [];
             if (!name) missing.push("Name");
@@ -103,7 +119,7 @@ const AddProductScreen = () => {
             if (!price) missing.push("Price");
             if (!image1) missing.push("First Image");
             
-            console.warn("[Diagnostic Result] Validation failed:", { missing, image1Status: !!image1 });
+            console.warn("[Diagnostic Result] Validation failed. Missing items:", missing);
             Alert.alert("Missing Information", `Please provide: ${missing.join(", ")}.`);
             return;
         }

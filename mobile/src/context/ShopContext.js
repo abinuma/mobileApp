@@ -9,7 +9,8 @@ const ShopContextProvider = (props) => {
   const currency = "$";
   const delivery_fee = 10;
   // Professional configuration using .env (EXPO_PUBLIC_ prefix is required for Expo)
-  const backendUrl = process.env.EXPO_PUBLIC_BACKEND_URL || "https://crownwear-backend.vercel.app/"; 
+  const rawUrl = process.env.EXPO_PUBLIC_BACKEND_URL || "https://crownwear-backend.vercel.app"; 
+  const backendUrl = rawUrl.replace(/\/+$/, ""); // Safely remove trailing slashes to prevent // redirects
   const [search, setSearch] = useState("");
   const [showSearch, setShowSearch] = useState(false);
   const [cartItems, setCartItems] = useState({});

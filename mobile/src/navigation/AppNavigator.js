@@ -92,7 +92,17 @@ const MainTabs = () => {
         component={CartStack} 
         options={{ 
           tabBarBadge: cartCount > 0 ? cartCount : null,
-          tabBarBadgeStyle: { backgroundColor: '#000', color: '#fff' }
+          tabBarBadgeStyle: { 
+            backgroundColor: '#000', 
+            color: '#fff',
+            fontSize: 10,
+            fontWeight: 'bold',
+            minWidth: 16,
+            height: 16,
+            borderRadius: 8,
+            lineHeight: 14,
+            textAlign: 'center'
+          }
         }} 
       />
       <Tab.Screen name="Profile" component={ProfileStack} />
