@@ -12,7 +12,7 @@ const VerifyScreen = ({ route, navigation }) => {
         try {
             if (!token) return;
 
-            const response = await axios.post(
+            const response = await axios.patch(
                 backendUrl + "/api/order/verifyStripe",
                 { success, orderId },
                 { headers: { token } }
