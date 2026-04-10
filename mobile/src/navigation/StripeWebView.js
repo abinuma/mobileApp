@@ -1,12 +1,15 @@
-import React, { useRef } from 'react';
+import React, { useRef, useContext } from 'react';
+import { Alert } from 'react-native';
 import { WebView } from 'react-native-webview';
 import { useNavigation } from '@react-navigation/native';
 import axios from 'axios';
+import { ShopContext } from '../context/ShopContext';
 
 const StripeWebView = ({ route }) => {
   const { session_url, orderData } = route.params;
   const navigation = useNavigation();
   const webViewRef = useRef(null);
+  const { token, backendUrl } = useContext(ShopContext);
 
   const handleNavigationStateChange = async (navState) => {
     const { url } = navState;
@@ -23,12 +26,10 @@ const StripeWebView = ({ route }) => {
       // Now call the verify endpoint
       if (success === 'true') {
         try {
-                    const { token } = req.headers;
-
-          const response = await axios.patch(
-            `${process.env.EXPO_PUBLIC_BACKEND_URL}/api/order/verifyStripe`,
+          const response = await axios.post(
+            `${backendUrl}/api/order/verifyStripe`,
             { success, orderId },
-            { headers: { token: token} }
+            { headers: { token } }
           );
           if (response.data.success) {
             Alert.alert('Success', 'Payment successful!');

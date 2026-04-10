@@ -16,6 +16,7 @@ import OrdersScreen from '../screens/OrdersScreen';
 import VerifyScreen from '../screens/VerifyScreen';
 import AboutScreen from '../screens/AboutScreen';
 import ContactScreen from '../screens/ContactScreen';
+import StripeWebView from './StripeWebView';
 
 // Admin Screens
 import AdminLoginScreen from '../screens/admin/AdminLoginScreen';
@@ -35,6 +36,7 @@ const commonScreens = (Stack) => (
     <Stack.Screen name="Verify" component={VerifyScreen} />
     <Stack.Screen name="About" component={AboutScreen} />
     <Stack.Screen name="Contact" component={ContactScreen} />
+    <Stack.Screen name="StripeWebView" component={StripeWebView} />
   </>
 );
 

@@ -18,6 +18,6 @@ orderRouter.post("/razorpay", authUser,placeOrderRazorpay);
 orderRouter.get("/userorders", authUser, userOrders);
 
 //verify payment
-orderRouter.patch("/verifyStripe", authUser,verifyStripe)
+orderRouter.post("/verifyStripe", authUser,verifyStripe)
 
 export default orderRouter;

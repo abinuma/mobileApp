@@ -17,7 +17,7 @@ const Verify = () => {
         return null;
       }
 
-      const reponse = await axios.patch(
+      const reponse = await axios.post(
         backendUrl + "/api/order/verifyStripe",
         { success, orderId },
         { headers: { Authorization: token } },
