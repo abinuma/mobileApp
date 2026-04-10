@@ -1,4 +1,5 @@
 import React, { useContext } from 'react';
+import * as Linking from 'expo-linking';
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
@@ -112,7 +113,6 @@ const MainTabs = () => {
   );
 };
 
-// --- ADMIN NAVIGATION ---
 const AdminTabs = () => (
   <Tab.Navigator
     screenOptions={({ route }) => ({
@@ -133,10 +133,46 @@ const AdminTabs = () => (
   </Tab.Navigator>
 );
 
+const prefix = Linking.createURL('/');
+
+const linking = {
+  prefixes: [prefix],
+  config: {
+    screens: {
+      Main: {
+        screens: {
+          Home: {
+            screens: {
+              Verify: 'verify',
+              Orders: 'orders',
+              Cart: 'cart'
+            }
+          },
+          Collection: {
+            screens: {
+              Verify: 'verify'
+            }
+          },
+          Cart: {
+            screens: {
+              Verify: 'verify'
+            }
+          },
+          Profile: {
+            screens: {
+              Verify: 'verify'
+            }
+          }
+        }
+      }
+    }
+  }
+};
+
 // --- ROOT NAVIGATOR ---
 const AppNavigator = () => {
   return (
-    <NavigationContainer>
+    <NavigationContainer linking={linking}>
       <Stack.Navigator screenOptions={{ headerShown: false }}>
         {/* Client App Flow */}
         <Stack.Screen name="Main" component={MainTabs} />
