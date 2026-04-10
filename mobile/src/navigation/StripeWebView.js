@@ -1,5 +1,5 @@
-import React, { useRef, useContext, useEffect } from 'react';
-import { Alert, Platform, Linking, View, ActivityIndicator, Text, StyleSheet } from 'react-native';
+import React, { useRef, useContext } from 'react';
+import { Alert } from 'react-native';
 import { WebView } from 'react-native-webview';
 import { useNavigation } from '@react-navigation/native';
 import axios from 'axios';
@@ -44,22 +44,6 @@ const StripeWebView = ({ route }) => {
     }
   };
 
-  useEffect(() => {
-    if (Platform.OS === 'web') {
-      // Direct redirect on web
-      window.location.href = session_url;
-    }
-  }, [session_url]);
-
-  if (Platform.OS === 'web') {
-    return (
-      <View style={styles.webContainer}>
-        <ActivityIndicator size="large" color="#000" />
-        <Text style={styles.webText}>Redirecting to payment gateway...</Text>
-      </View>
-    );
-  }
-
   return (
     <WebView
       ref={webViewRef}
@@ -69,19 +53,5 @@ const StripeWebView = ({ route }) => {
     />
   );
 };
-
-const styles = StyleSheet.create({
-  webContainer: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: '#fff',
-  },
-  webText: {
-    marginTop: 20,
-    fontSize: 16,
-    color: '#4b5563',
-  },
-});
 
 export default StripeWebView;
