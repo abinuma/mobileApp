@@ -41,10 +41,16 @@ const addProduct = async (req, res) => {
 
     let imagesUrl = await Promise.all(
       images.map(async (item) => {
-        console.log(`[Backend] Uploading to Cloudinary...`);
+        console.log(`[Backend] Uploading to Cloudinary... File: ${item.path}`);
+        
+        // Pass config directly to ensure it uses the correct credentials
         let result = await cloudinary.uploader.upload(item.path, {
           resource_type: "image",
+          api_key: process.env.CLOUDINARY_API_KEY.trim(),
+          api_secret: process.env.CLOUDINARY_SECRET_KEY.trim(),
+          cloud_name: process.env.CLOUDINARY_NAME.trim()
         });
+        
         console.log(`[Backend] Cloudinary Upload Success: ${result.secure_url}`);
         return result.secure_url;
       }),
@@ -99,7 +105,6 @@ const addProduct = async (req, res) => {
 const listProducts = async (req, res) => {
   try {
     const products = await productModel.find();
-    console.log(`[DEBUG] listProducts called. Database: ${mongoose.connection.name}. Found ${products.length} products.`);
     res.json({ success: true, products });
   } catch (error) {
     console.log(error);
