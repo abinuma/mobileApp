@@ -77,9 +77,8 @@ const PlaceOrderScreen = ({ navigation }) => {
                         Alert.alert("Success", "Order placed successfully!");
                         navigation.reset({
                             index: 0,
-                            routes: [{ name: 'Cart' }], // Go back to cart or navigate to Orders
+                            routes: [{ name: 'Orders' }],
                         });
-                        navigation.navigate('Orders');
                     } else {
                         Alert.alert("Error", response.data.message);
                     }

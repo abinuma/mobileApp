@@ -12,9 +12,16 @@ const VerifyScreen = ({ route, navigation }) => {
         try {
             if (!token) return;
 
-            // If no params, redirect to Home immediately
-            if (!success || !orderId) {
-                navigation.replace('Main');
+            // If no params or explicit cancellation, redirect immediately
+            if (!success || !orderId || success === 'false') {
+                if (success === 'false') {
+                    // Sync with backend to cleanup order, but don't block UI if possible or at least show clear message
+                    await axios.post(backendUrl + "/api/order/verifyStripe", { success, orderId }, { headers: { token } });
+                    Alert.alert("Cancelled", "Payment was cancelled.");
+                    navigation.replace('Cart');
+                } else {
+                    navigation.replace('Main');
+                }
                 return;
             }
 
@@ -27,7 +34,11 @@ const VerifyScreen = ({ route, navigation }) => {
             if (response.data.success) {
                 setCartItems({});
                 Alert.alert("Success", "Payment verified successfully!");
-                navigation.replace('Orders');
+                // Reset navigation to clean state to fix Home button issues
+                navigation.reset({
+                    index: 0,
+                    routes: [{ name: 'Orders' }],
+                });
             } else {
                 Alert.alert("Failed", "Payment verification failed.");
                 navigation.replace('Cart');
