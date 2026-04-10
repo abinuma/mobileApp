@@ -46,9 +46,11 @@ const addProduct = async (req, res) => {
         // Pass config directly to ensure it uses the correct credentials
         let result = await cloudinary.uploader.upload(item.path, {
           resource_type: "image",
-          api_key: process.env.CLOUDINARY_API_KEY.trim(),
-          api_secret: process.env.CLOUDINARY_SECRET_KEY.trim(),
-          cloud_name: process.env.CLOUDINARY_NAME.trim()
+          folder: "mobileApp"
+
+        //   api_key: process.env.CLOUDINARY_API_KEY.trim(),
+        //   api_secret: process.env.CLOUDINARY_SECRET_KEY.trim(),
+        //   cloud_name: process.env.CLOUDINARY_NAME.trim()
         });
         
         console.log(`[Backend] Cloudinary Upload Success: ${result.secure_url}`);
