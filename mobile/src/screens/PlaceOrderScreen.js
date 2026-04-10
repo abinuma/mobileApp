@@ -85,21 +85,18 @@ const PlaceOrderScreen = ({ navigation }) => {
                     }
                     break;
 
-                case "stripe":
-                    // Redirect logic would go here, maybe to a WebView screen
-                    const responseStripe = await axios.post(
-                        backendUrl + "/api/order/stripe", 
-                        orderData, 
-                        { headers: { token } }
-                    );
-                    if (responseStripe.data.success) {
-                        const { session_url } = responseStripe.data;
-                        navigation.navigate('Verify', { session_url, orderData });
-                    } else {
-                        Alert.alert("Error", responseStripe.data.message);
-                    }
-                    break;
-
+               case "stripe":
+    const responseStripe = await axios.post(
+        backendUrl + "/api/order/stripe", 
+        orderData, 
+        { headers: { token } }
+    );
+    if (responseStripe.data.success) {
+        const { session_url } = responseStripe.data;
+        // Navigate to a WebView screen with the session URL
+        navigation.navigate('StripeWebView', { session_url, orderData });
+    }
+    break;
                 default:
                     break;
             }
