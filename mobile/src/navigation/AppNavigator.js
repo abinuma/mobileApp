@@ -150,17 +150,17 @@ const linking = {
           },
           Collection: {
             screens: {
-              Verify: 'verify'
+              CollectionMain: 'collection'
             }
           },
           Cart: {
             screens: {
-              Verify: 'verify'
+              CartMain: 'cart-details'
             }
           },
           Profile: {
             screens: {
-              Verify: 'verify'
+              ProfileMain: 'profile'
             }
           }
         }
