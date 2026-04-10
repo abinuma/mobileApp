@@ -12,6 +12,12 @@ const VerifyScreen = ({ route, navigation }) => {
         try {
             if (!token) return;
 
+            // If no params, redirect to Home immediately
+            if (!success || !orderId) {
+                navigation.replace('Main');
+                return;
+            }
+
             const response = await axios.post(
                 backendUrl + "/api/order/verifyStripe",
                 { success, orderId },
@@ -21,15 +27,15 @@ const VerifyScreen = ({ route, navigation }) => {
             if (response.data.success) {
                 setCartItems({});
                 Alert.alert("Success", "Payment verified successfully!");
-                navigation.navigate('Orders');
+                navigation.replace('Orders');
             } else {
                 Alert.alert("Failed", "Payment verification failed.");
-                navigation.navigate('Cart');
+                navigation.replace('Cart');
             }
         } catch (error) {
             console.log(error);
             Alert.alert("Error", error.message);
-            navigation.navigate('Cart');
+            navigation.replace('Cart');
         }
     };
 
