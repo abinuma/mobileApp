@@ -39,7 +39,7 @@ const AdminOrdersScreen = () => {
         const token = await AsyncStorage.getItem('adminToken');
         try {
             console.log(`[API Call] Updating order status: ${backendUrl}/api/order/status`);
-            const response = await axios.post(
+            const response = await axios.patch(
                 backendUrl + "/api/order/status",
                 { orderId, status: newStatus },
                 { headers: { token } }
