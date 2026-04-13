@@ -1,15 +1,22 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, TextInput, TouchableOpacity, Alert } from 'react-native';
+import { View, Text, StyleSheet, TextInput, TouchableOpacity } from 'react-native';
+import InlineBanner, { useInlineBanner } from './InlineBanner';
 
 const NewsletterBox = () => {
     const [email, setEmail] = useState('');
+    const { banner, showBanner, clearBanner } = useInlineBanner();
 
-    const onSubmitHandler = (event) => {
+    const onSubmitHandler = () => {
         if (!email) {
-            Alert.alert("Error", "Please enter an email address");
+            showBanner("Please enter an email address.", "warning");
             return;
         }
-        Alert.alert("Success", "Thanks for subscribing!");
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        if (!emailRegex.test(email)) {
+            showBanner("Please enter a valid email address.", "error");
+            return;
+        }
+        showBanner("Thanks for subscribing! You'll get 20% off.", "success");
         setEmail('');
     };
 
@@ -19,13 +26,17 @@ const NewsletterBox = () => {
             <Text style={styles.subtitle}>
                 Stay updated with our latest collections and exclusive offers.
             </Text>
+
+            {/* Inline Banner */}
+            <InlineBanner message={banner.message} type={banner.type} onDismiss={clearBanner} />
+
             <View style={styles.inputContainer}>
                 <TextInput
                     style={styles.input}
                     placeholder="Enter your email"
                     placeholderTextColor="#9ca3af"
                     value={email}
-                    onChangeText={setEmail}
+                    onChangeText={(t) => { setEmail(t); clearBanner(); }}
                     keyboardType="email-address"
                     autoCapitalize="none"
                 />

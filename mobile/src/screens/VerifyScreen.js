@@ -1,13 +1,16 @@
-import React, { useContext, useEffect } from 'react';
-import { View, Text, StyleSheet, ActivityIndicator, Alert } from 'react-native';
+import React, { useContext, useEffect, useState } from 'react';
+import { View, Text, StyleSheet, ActivityIndicator } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { CommonActions } from '@react-navigation/native';
 import { ShopContext } from '../context/ShopContext';
+import InlineBanner from '../components/InlineBanner';
 import axios from 'axios';
 
 const VerifyScreen = ({ route, navigation }) => {
     const { backendUrl, token, setCartItems } = useContext(ShopContext);
     const { success, orderId } = route.params || {};
+    const [statusMessage, setStatusMessage] = useState(null);
+    const [statusType, setStatusType] = useState('info');
 
     // Helper: fully reset the app to a specific tab, optionally with a screen pushed on top
     const resetToTab = (tabName, pushScreen) => {
@@ -59,8 +62,9 @@ const VerifyScreen = ({ route, navigation }) => {
                 } catch (e) {
                     console.log("Cleanup error:", e.message);
                 }
-                Alert.alert("Cancelled", "Payment was cancelled.");
-                resetToTab('Cart');
+                setStatusMessage("Payment was cancelled.");
+                setStatusType("warning");
+                setTimeout(() => resetToTab('Cart'), 1500);
                 return;
             }
 
@@ -72,17 +76,19 @@ const VerifyScreen = ({ route, navigation }) => {
 
             if (response.data.success) {
                 setCartItems({});
-                Alert.alert("Success", "Payment verified successfully!");
-                // Reset to Home tab with Orders screen on top
-                resetToTab('Home', 'Orders');
+                setStatusMessage("Payment verified successfully! 🎉");
+                setStatusType("success");
+                setTimeout(() => resetToTab('Home', 'Orders'), 1500);
             } else {
-                Alert.alert("Failed", "Payment verification failed.");
-                resetToTab('Cart');
+                setStatusMessage("Payment verification failed. Please contact support.");
+                setStatusType("error");
+                setTimeout(() => resetToTab('Cart'), 2500);
             }
         } catch (error) {
             console.log(error);
-            Alert.alert("Error", error.message);
-            resetToTab('Cart');
+            setStatusMessage(error.message || "Verification error. Please try again.");
+            setStatusType("error");
+            setTimeout(() => resetToTab('Cart'), 2500);
         }
     };
 
@@ -94,6 +100,18 @@ const VerifyScreen = ({ route, navigation }) => {
         <SafeAreaView style={styles.container}>
             <ActivityIndicator size="large" color="#000" />
             <Text style={styles.text}>Verifying Payment...</Text>
+            
+            {/* Inline status message */}
+            {statusMessage && (
+                <View style={{ marginTop: 24, width: '100%', paddingHorizontal: 24 }}>
+                    <InlineBanner 
+                        message={statusMessage} 
+                        type={statusType} 
+                        onDismiss={() => setStatusMessage(null)}
+                        autoDismiss={0}
+                    />
+                </View>
+            )}
         </SafeAreaView>
     );
 };

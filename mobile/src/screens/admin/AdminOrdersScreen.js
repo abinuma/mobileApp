@@ -1,15 +1,19 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, Image, TouchableOpacity, Alert, ActivityIndicator } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, ActivityIndicator } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { ShopContext } from '../../context/ShopContext';
+import InlineBanner, { useInlineBanner } from '../../components/InlineBanner';
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import axios from 'axios';
-import { Picker } from '@react-native-picker/picker'; // Note: needs installation or alternative
+import { useNavigation } from '@react-navigation/native';
+import { ArrowLeft } from 'lucide-react-native';
 
 const AdminOrdersScreen = () => {
     const { backendUrl, currency } = React.useContext(ShopContext);
+    const navigation = useNavigation();
     const [orders, setOrders] = useState([]);
     const [loading, setLoading] = useState(false);
+    const { banner, showBanner, clearBanner } = useInlineBanner();
 
     const fetchAllOrders = async () => {
         const token = await AsyncStorage.getItem('adminToken');
@@ -25,11 +29,16 @@ const AdminOrdersScreen = () => {
             if (response.data.success) {
                 setOrders(response.data.orders.reverse());
             } else {
-                Alert.alert("Error", response.data.message);
+                showBanner(response.data.message || "Failed to load orders.", "error");
             }
         } catch (error) {
             console.error('[API Error] Admin orders fetch failed:', error.response?.data || error.message);
-            Alert.alert("Error", error.message);
+            const msg = error.message;
+            if (msg.includes('Network Error')) {
+                showBanner("Unable to connect. Check your internet connection.", "error");
+            } else {
+                showBanner(msg || "Failed to load orders.", "error");
+            }
         } finally {
             setLoading(false);
         }
@@ -46,13 +55,14 @@ const AdminOrdersScreen = () => {
             );
             console.log('[API Success] Update status response:', response.data.success);
             if (response.data.success) {
+                showBanner(`Order status updated to "${newStatus}".`, "success");
                 await fetchAllOrders();
             } else {
-                Alert.alert("Error", response.data.message);
+                showBanner(response.data.message || "Failed to update status.", "error");
             }
         } catch (error) {
             console.error('[API Error] Status update failed:', error.response?.data || error.message);
-            Alert.alert("Error", error.message);
+            showBanner(error.message || "Failed to update order status.", "error");
         }
     };
 
@@ -64,7 +74,21 @@ const AdminOrdersScreen = () => {
         <SafeAreaView style={styles.safeArea}>
             <View style={styles.header}>
                 <Text style={styles.headerTitle}>All Orders</Text>
+                <TouchableOpacity 
+                    style={styles.backToShop} 
+                    onPress={() => navigation.reset({ index: 0, routes: [{ name: 'Main' }] })}
+                >
+                    <ArrowLeft size={14} color="#6b7280" />
+                    <Text style={styles.backToShopText}>Back to Shop</Text>
+                </TouchableOpacity>
             </View>
+
+            {/* Inline Banner */}
+            {banner.message ? (
+                <View style={{ paddingHorizontal: 16, paddingTop: 8 }}>
+                    <InlineBanner message={banner.message} type={banner.type} onDismiss={clearBanner} />
+                </View>
+            ) : null}
 
             {loading ? (
                 <View style={styles.loadingContainer}>
@@ -111,7 +135,6 @@ const AdminOrdersScreen = () => {
                                 <View style={styles.amountRow}>
                                     <Text style={styles.amountText}>{currency}{order.amount}</Text>
                                     
-                                    {/* Using a simpler touchable list for status if Picker is not available */}
                                     <View style={styles.statusPickerContainer}>
                                         <Text style={styles.statusLabel}>Update Status:</Text>
                                         <View style={styles.statusButtons}>
@@ -154,11 +177,28 @@ const styles = StyleSheet.create({
         padding: 16,
         borderBottomWidth: 1,
         borderBottomColor: '#f3f4f6',
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
     },
     headerTitle: {
         fontSize: 18,
         fontWeight: 'bold',
         color: '#374151',
+    },
+    backToShop: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        paddingVertical: 4,
+        paddingHorizontal: 10,
+        backgroundColor: '#f3f4f6',
+        borderRadius: 16,
+    },
+    backToShopText: {
+        color: '#6b7280',
+        fontSize: 12,
+        marginLeft: 4,
+        fontWeight: '500',
     },
     loadingContainer: {
         flex: 1,

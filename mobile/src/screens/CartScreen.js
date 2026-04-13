@@ -2,12 +2,14 @@ import React, { useContext, useEffect, useState } from 'react';
 import { View, Text, ScrollView, Image, TouchableOpacity, StyleSheet, TextInput as RNTextInput } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { ShopContext } from '../context/ShopContext';
+import InlineBanner, { useInlineBanner } from '../components/InlineBanner';
 import Title from '../components/Title';
 import { Trash2 } from 'lucide-react-native';
 import { Button } from 'react-native-paper';
 
 const CartScreen = ({ navigation }) => {
   const { products, currency, cartItems, updateQuantity, getCartAmount, delivery_fee } = useContext(ShopContext);
+  const { banner, showBanner, clearBanner } = useInlineBanner();
   const [cartData, setCartData] = useState([]);
   const [checkingOut, setCheckingOut] = useState(false);
 
@@ -31,7 +33,7 @@ const CartScreen = ({ navigation }) => {
 
   const handleCheckout = () => {
     if (getCartAmount() === 0) {
-        Alert.alert("Error", "Your cart is empty");
+        showBanner("Your cart is empty. Add some items first!", "warning");
         return;
     }
     navigation.navigate('PlaceOrder');
@@ -47,6 +49,13 @@ const CartScreen = ({ navigation }) => {
       </View>
 
       <ScrollView style={styles.scrollContainer} contentContainerStyle={styles.scrollContent}>
+        {/* Inline Banner */}
+        {banner.message ? (
+          <View style={{ marginTop: 12 }}>
+            <InlineBanner message={banner.message} type={banner.type} onDismiss={clearBanner} />
+          </View>
+        ) : null}
+
         {cartData.length > 0 ? (
           cartData.map((item, index) => {
             const productData = products.find((product) => product._id === item._id);

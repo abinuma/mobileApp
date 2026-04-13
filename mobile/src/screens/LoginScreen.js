@@ -1,11 +1,12 @@
 import React, { useContext, useEffect, useRef, useState } from 'react';
-import { View, Text, TouchableOpacity, ScrollView, Alert, StyleSheet, Animated } from 'react-native';
+import { View, Text, TouchableOpacity, ScrollView, StyleSheet, Animated } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { ShopContext } from '../context/ShopContext';
 import axios from 'axios';
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { TextInput, Button, Avatar, List, Divider } from 'react-native-paper';
 import { Settings, LogOut, ShieldCheck, ShoppingBag, AlertCircle, CheckCircle, X } from 'lucide-react-native';
+import SharedInlineBanner, { useInlineBanner } from '../components/InlineBanner';
 
 // --- Map raw backend messages to user-friendly messages ---
 const friendlyMessages = {
@@ -266,7 +267,7 @@ const LoginScreen = ({ navigation }) => {
               title="Settings"
               left={props => <Settings color="#6b7280" size={20} style={{ marginTop: 10 }} />}
               right={props => <List.Icon {...props} icon="chevron-right" />}
-              onPress={() => Alert.alert("Notice", "Settings coming soon")}
+              onPress={() => showBanner("Settings coming soon!", "info")}
               style={styles.menuItem}
             />
             <Divider />
@@ -326,7 +327,7 @@ const LoginScreen = ({ navigation }) => {
           />
 
           <View style={styles.linkRow}>
-            <TouchableOpacity onPress={() => Alert.alert('Notice', 'Forgot password feature coming soon!')}>
+            <TouchableOpacity onPress={() => showBanner('Forgot password feature coming soon!', 'info')}>
               <Text style={styles.linkTextMuted}>Forgot your password?</Text>
             </TouchableOpacity>
             {currentState === 'Login' ? (

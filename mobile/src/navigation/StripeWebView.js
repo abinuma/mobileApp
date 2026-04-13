@@ -1,5 +1,5 @@
 import React, { useRef, useContext, useEffect } from 'react';
-import { Alert, Platform, Linking, View, ActivityIndicator, Text, StyleSheet } from 'react-native';
+import { Platform, View, ActivityIndicator, Text, StyleSheet } from 'react-native';
 import { WebView } from 'react-native-webview';
 import { useNavigation } from '@react-navigation/native';
 import axios from 'axios';
@@ -32,15 +32,14 @@ const StripeWebView = ({ route }) => {
             { headers: { token } }
           );
           if (response.data.success) {
-            Alert.alert('Success', 'Payment successful!');
+            // Navigate to Orders — success handled by VerifyScreen or OrdersScreen
             navigation.navigate('Orders');
           }
         } catch (error) {
-          Alert.alert('Error', 'Verification failed');
+          console.error('[StripeWebView] Verification failed:', error.message);
         }
-      } else {
-        Alert.alert('Cancelled', 'Payment was cancelled.');
       }
+      // Cancellation is handled silently — user returns to previous screen
     }
   };
 

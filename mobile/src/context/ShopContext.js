@@ -1,5 +1,4 @@
 import React, { createContext, useEffect, useState } from "react";
-import { Alert } from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import axios from "axios";
 
@@ -19,7 +18,7 @@ const ShopContextProvider = (props) => {
 
   const addToCart = async (itemId, size) => {
     if (!size) {
-      Alert.alert("Error", "Please select a product size");
+      // Validation is handled by the calling screen (ProductDetailScreen)
       return;
     }
 
@@ -48,7 +47,6 @@ const ShopContextProvider = (props) => {
         console.log('[API Success] Add to cart response:', response.data);
       } catch (error) {
         console.error('[API Error] Add to cart failed:', error.response?.data || error.message);
-        Alert.alert("Error", error.message);
       }
     }
   };
@@ -83,7 +81,6 @@ const ShopContextProvider = (props) => {
         console.log('[API Success] Update quantity response:', response.data);
       } catch (error) {
         console.error('[API Error] Update quantity failed:', error.response?.data || error.message);
-        Alert.alert("Error", error.message);
       }
     }
   };
@@ -113,11 +110,10 @@ const ShopContextProvider = (props) => {
       if (response.data.success) {
         setProducts(response.data.products);
       } else {
-        Alert.alert("Error", response.data.message);
+        console.error('[API Error] Fetch products failed:', response.data.message);
       }
     } catch (error) {
       console.error('[API Error] Fetch products failed:', error.response?.data || error.message);
-      Alert.alert("Error", error.message);
     }
   };
 
@@ -133,7 +129,6 @@ const ShopContextProvider = (props) => {
       }
     } catch (error) {
       console.error('[API Error] Fetch user cart failed:', error.response?.data || error.message);
-      Alert.alert("Error", error.message);
     }
     console.log('[Auth] Token set and user cart fetching initiated');
   };

@@ -1,18 +1,21 @@
 import React, { useContext, useEffect, useState } from 'react';
-import { View, Text, ScrollView, Image, TouchableOpacity, StyleSheet, Alert } from 'react-native';
+import { View, Text, ScrollView, Image, TouchableOpacity, StyleSheet } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { ShopContext } from '../context/ShopContext';
 import { Button, ActivityIndicator } from 'react-native-paper';
 import RelatedProducts from '../components/RelatedProducts';
+import InlineBanner, { useInlineBanner } from '../components/InlineBanner';
 
 const ProductDetailScreen = ({ route, navigation }) => {
   const { productId } = route.params || {};
   const { products, currency, addToCart } = useContext(ShopContext);
+  const { banner, showBanner, clearBanner } = useInlineBanner();
   
   const [productData, setProductData] = useState(null);
   const [image, setImage] = useState("");
   const [size, setSize] = useState("");
   const [adding, setAdding] = useState(false);
+  const [sizeError, setSizeError] = useState(false); // Red border on sizes
 
   const fetchProductData = () => {
     const product = products.find((item) => item._id === productId);
@@ -30,14 +33,19 @@ const ProductDetailScreen = ({ route, navigation }) => {
 
   const handleAddToCart = async () => {
     if (!size) {
-      Alert.alert("Error", "Please select a product size");
+      setSizeError(true);
+      showBanner("Please select a size before adding to cart.", "warning");
       return;
     }
+    setSizeError(false);
+    clearBanner();
     setAdding(true);
     try {
         await addToCart(productData._id, size);
+        showBanner(`${productData.name} (${size}) added to cart!`, "success");
     } catch (error) {
         console.log(error);
+        showBanner("Failed to add item to cart. Please try again.", "error");
     } finally {
         setAdding(false);
     }
@@ -91,22 +99,29 @@ const ProductDetailScreen = ({ route, navigation }) => {
           <Text style={styles.price}>{currency}{productData.price}</Text>
           <Text style={styles.description}>{productData.description}</Text>
 
+          {/* Inline Banner */}
+          <InlineBanner message={banner.message} type={banner.type} onDismiss={clearBanner} />
+
           {/* Size Selection */}
-          <View style={styles.sizeSection}>
-            <Text style={styles.sizeTitle}>Select Size</Text>
+          <View style={[styles.sizeSection, sizeError && styles.sizeSectionError]}>
+            <Text style={[styles.sizeTitle, sizeError && { color: '#dc2626' }]}>
+              Select Size {sizeError ? '— required' : ''}
+            </Text>
             <View style={styles.sizeGrid}>
               {productData.sizes && productData.sizes.map((item, index) => (
                 <TouchableOpacity 
                   key={index} 
-                  onPress={() => setSize(item)}
+                  onPress={() => { setSize(item); setSizeError(false); clearBanner(); }}
                   style={[
                     styles.sizeBox,
-                    size === item && styles.sizeBoxActive
+                    size === item && styles.sizeBoxActive,
+                    sizeError && styles.sizeBoxError,
                   ]}
                 >
                   <Text style={[
                     styles.sizeText,
-                    size === item && styles.sizeTextActive
+                    size === item && styles.sizeTextActive,
+                    sizeError && styles.sizeTextError,
                   ]}>{item}</Text>
                 </TouchableOpacity>
               ))}
@@ -204,6 +219,14 @@ const styles = StyleSheet.create({
   },
   sizeSection: {
     marginBottom: 24,
+    padding: 12,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: 'transparent',
+  },
+  sizeSectionError: {
+    borderColor: '#fca5a5',
+    backgroundColor: '#fef2f2',
   },
   sizeTitle: {
     fontSize: 18,
@@ -227,12 +250,18 @@ const styles = StyleSheet.create({
     borderColor: '#f97316',
     backgroundColor: '#fff7ed',
   },
+  sizeBoxError: {
+    borderColor: '#fca5a5',
+  },
   sizeText: {
     color: '#374151',
   },
   sizeTextActive: {
     color: '#f97316',
     fontWeight: 'bold',
+  },
+  sizeTextError: {
+    color: '#dc2626',
   },
   addToCartBtn: {
     borderRadius: 4,

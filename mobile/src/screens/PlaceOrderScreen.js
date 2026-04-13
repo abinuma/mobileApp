@@ -1,16 +1,31 @@
 import React, { useContext, useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Image, Alert, KeyboardAvoidingView, Platform } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, KeyboardAvoidingView, Platform } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { TextInput, Button } from 'react-native-paper';
 import { ShopContext } from '../context/ShopContext';
 import Title from '../components/Title';
 import CartTotal from '../components/CartTotal';
+import InlineBanner, { useInlineBanner } from '../components/InlineBanner';
 import axios from 'axios';
+
+const FIELD_LABELS = {
+    firstName: "First Name",
+    lastName: "Last Name",
+    email: "Email",
+    street: "Street",
+    city: "City",
+    state: "State",
+    zipcode: "Zipcode",
+    country: "Country",
+    phone: "Phone",
+};
 
 const PlaceOrderScreen = ({ navigation }) => {
     const [method, setMethod] = useState('cod');
     const { backendUrl, token, cartItems, setCartItems, getCartAmount, delivery_fee, products } = useContext(ShopContext);
     const [loading, setLoading] = useState(false);
+    const { banner, showBanner, clearBanner } = useInlineBanner();
+    const [fieldErrors, setFieldErrors] = useState({}); // Track which fields have errors
 
     const [formData, setFormData] = useState({
         firstName: "",
@@ -26,22 +41,42 @@ const PlaceOrderScreen = ({ navigation }) => {
 
     const onchangeHandler = (name, value) => {
         setFormData(data => ({ ...data, [name]: value }));
+        // Clear error for this field when user types
+        if (fieldErrors[name]) {
+            setFieldErrors(prev => ({ ...prev, [name]: false }));
+            clearBanner();
+        }
     };
 
     const onSubmitHandler = async () => {
+        clearBanner();
+
         if (!token) {
-            Alert.alert("Error", "Please login to place an order");
+            showBanner("Please login to place an order.", "warning");
             return;
         }
 
-        // Basic Validation
+        // Validate all fields and highlight missing ones
+        const errors = {};
+        const missingFields = [];
         for (const key in formData) {
-            if (!formData[key]) {
-                Alert.alert("Error", `Please fill in the ${key} field.`);
-                return;
+            if (!formData[key].trim()) {
+                errors[key] = true;
+                missingFields.push(FIELD_LABELS[key]);
             }
         }
 
+        if (missingFields.length > 0) {
+            setFieldErrors(errors);
+            if (missingFields.length === 1) {
+                showBanner(`Please fill in the ${missingFields[0]} field.`, "error");
+            } else {
+                showBanner(`Please fill in: ${missingFields.join(", ")}.`, "error");
+            }
+            return;
+        }
+
+        setFieldErrors({});
         setLoading(true);
         try {
             let orderItems = [];
@@ -70,42 +105,58 @@ const PlaceOrderScreen = ({ navigation }) => {
                     const response = await axios.post(
                         backendUrl + "/api/order/place",
                         orderData,
-                        { headers: { token } } // matched standardized header
+                        { headers: { token } }
                     );
                     if (response.data.success) {
                         setCartItems({});
-                        Alert.alert("Success", "Order placed successfully!");
-                        navigation.reset({
-                            index: 0,
-                            routes: [{ name: 'Orders' }],
-                        });
+                        showBanner("Order placed successfully! 🎉", "success");
+                        setTimeout(() => {
+                            navigation.reset({
+                                index: 0,
+                                routes: [{ name: 'Orders' }],
+                            });
+                        }, 1200);
                     } else {
-                        Alert.alert("Error", response.data.message);
+                        showBanner(response.data.message || "Failed to place order.", "error");
                     }
                     break;
 
                case "stripe":
-    const responseStripe = await axios.post(
-        backendUrl + "/api/order/stripe", 
-        orderData, 
-        { headers: { token } }
-    );
-    if (responseStripe.data.success) {
-        const { session_url } = responseStripe.data;
-        // Navigate to a WebView screen with the session URL
-        navigation.navigate('StripeWebView', { session_url, orderData });
-    }
-    break;
+                    const responseStripe = await axios.post(
+                        backendUrl + "/api/order/stripe", 
+                        orderData, 
+                        { headers: { token } }
+                    );
+                    if (responseStripe.data.success) {
+                        const { session_url } = responseStripe.data;
+                        navigation.navigate('StripeWebView', { session_url, orderData });
+                    } else {
+                        showBanner(responseStripe.data.message || "Failed to create payment session.", "error");
+                    }
+                    break;
                 default:
                     break;
             }
 
         } catch (error) {
             console.log(error);
-            Alert.alert("Error", error.message);
+            const msg = error.response?.data?.message || error.message;
+            if (msg.includes('Network Error')) {
+                showBanner("Unable to connect to server. Check your internet.", "error");
+            } else {
+                showBanner(msg || "Something went wrong. Please try again.", "error");
+            }
         } finally {
             setLoading(false);
         }
+    };
+
+    // Helper to get error style for TextInput
+    const getInputErrorStyle = (fieldName) => {
+        if (fieldErrors[fieldName]) {
+            return { borderColor: '#ef4444' };
+        }
+        return {};
     };
 
     return (
@@ -119,6 +170,9 @@ const PlaceOrderScreen = ({ navigation }) => {
                         <Title text1="DELIVERY" text2="INFORMATION" />
                     </View>
 
+                    {/* Inline Banner */}
+                    <InlineBanner message={banner.message} type={banner.type} onDismiss={clearBanner} />
+
                     <View style={styles.row}>
                         <TextInput
                             mode="outlined"
@@ -126,6 +180,9 @@ const PlaceOrderScreen = ({ navigation }) => {
                             value={formData.firstName}
                             onChangeText={(val) => onchangeHandler("firstName", val)}
                             style={[styles.input, { flex: 1, marginRight: 8 }]}
+                            outlineColor={fieldErrors.firstName ? '#ef4444' : undefined}
+                            activeOutlineColor={fieldErrors.firstName ? '#ef4444' : '#000'}
+                            error={fieldErrors.firstName}
                         />
                         <TextInput
                             mode="outlined"
@@ -133,6 +190,9 @@ const PlaceOrderScreen = ({ navigation }) => {
                             value={formData.lastName}
                             onChangeText={(val) => onchangeHandler("lastName", val)}
                             style={[styles.input, { flex: 1 }]}
+                            outlineColor={fieldErrors.lastName ? '#ef4444' : undefined}
+                            activeOutlineColor={fieldErrors.lastName ? '#ef4444' : '#000'}
+                            error={fieldErrors.lastName}
                         />
                     </View>
 
@@ -143,6 +203,9 @@ const PlaceOrderScreen = ({ navigation }) => {
                         value={formData.email}
                         onChangeText={(val) => onchangeHandler("email", val)}
                         style={styles.input}
+                        outlineColor={fieldErrors.email ? '#ef4444' : undefined}
+                        activeOutlineColor={fieldErrors.email ? '#ef4444' : '#000'}
+                        error={fieldErrors.email}
                     />
                     <TextInput
                         mode="outlined"
@@ -150,6 +213,9 @@ const PlaceOrderScreen = ({ navigation }) => {
                         value={formData.street}
                         onChangeText={(val) => onchangeHandler("street", val)}
                         style={styles.input}
+                        outlineColor={fieldErrors.street ? '#ef4444' : undefined}
+                        activeOutlineColor={fieldErrors.street ? '#ef4444' : '#000'}
+                        error={fieldErrors.street}
                     />
 
                     <View style={styles.row}>
@@ -159,6 +225,9 @@ const PlaceOrderScreen = ({ navigation }) => {
                             value={formData.city}
                             onChangeText={(val) => onchangeHandler("city", val)}
                             style={[styles.input, { flex: 1, marginRight: 8 }]}
+                            outlineColor={fieldErrors.city ? '#ef4444' : undefined}
+                            activeOutlineColor={fieldErrors.city ? '#ef4444' : '#000'}
+                            error={fieldErrors.city}
                         />
                         <TextInput
                             mode="outlined"
@@ -166,6 +235,9 @@ const PlaceOrderScreen = ({ navigation }) => {
                             value={formData.state}
                             onChangeText={(val) => onchangeHandler("state", val)}
                             style={[styles.input, { flex: 1 }]}
+                            outlineColor={fieldErrors.state ? '#ef4444' : undefined}
+                            activeOutlineColor={fieldErrors.state ? '#ef4444' : '#000'}
+                            error={fieldErrors.state}
                         />
                     </View>
 
@@ -177,6 +249,9 @@ const PlaceOrderScreen = ({ navigation }) => {
                             value={formData.zipcode}
                             onChangeText={(val) => onchangeHandler("zipcode", val)}
                             style={[styles.input, { flex: 1, marginRight: 8 }]}
+                            outlineColor={fieldErrors.zipcode ? '#ef4444' : undefined}
+                            activeOutlineColor={fieldErrors.zipcode ? '#ef4444' : '#000'}
+                            error={fieldErrors.zipcode}
                         />
                         <TextInput
                             mode="outlined"
@@ -184,6 +259,9 @@ const PlaceOrderScreen = ({ navigation }) => {
                             value={formData.country}
                             onChangeText={(val) => onchangeHandler("country", val)}
                             style={[styles.input, { flex: 1 }]}
+                            outlineColor={fieldErrors.country ? '#ef4444' : undefined}
+                            activeOutlineColor={fieldErrors.country ? '#ef4444' : '#000'}
+                            error={fieldErrors.country}
                         />
                     </View>
 
@@ -194,6 +272,9 @@ const PlaceOrderScreen = ({ navigation }) => {
                         value={formData.phone}
                         onChangeText={(val) => onchangeHandler("phone", val)}
                         style={styles.input}
+                        outlineColor={fieldErrors.phone ? '#ef4444' : undefined}
+                        activeOutlineColor={fieldErrors.phone ? '#ef4444' : '#000'}
+                        error={fieldErrors.phone}
                     />
 
                     <View style={styles.totalSection}>
@@ -276,7 +357,7 @@ const styles = StyleSheet.create({
         borderRadius: 4,
     },
     methodBoxActive: {
-        borderColor: '#10b981', // green-500
+        borderColor: '#10b981',
         backgroundColor: '#f0fdf4',
     },
     radio: {

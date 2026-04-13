@@ -1,7 +1,8 @@
 import React, { useContext, useEffect, useState, useCallback } from 'react';
-import { View, Text, StyleSheet, ScrollView, Image, TouchableOpacity, Alert, ActivityIndicator, RefreshControl } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, Image, TouchableOpacity, ActivityIndicator, RefreshControl } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { ShopContext } from '../context/ShopContext';
+import InlineBanner, { useInlineBanner } from '../components/InlineBanner';
 import Title from '../components/Title';
 import axios from 'axios';
 
@@ -10,6 +11,7 @@ const OrdersScreen = () => {
     const [orderData, setOrderData] = useState([]);
     const [loading, setLoading] = useState(false);
     const [refreshing, setRefreshing] = useState(false);
+    const { banner, showBanner, clearBanner } = useInlineBanner();
 
     const loadOrderData = async (showLoading = true) => {
         if (!token) return;
@@ -32,10 +34,17 @@ const OrdersScreen = () => {
                     });
                 });
                 setOrderData(allOrders.reverse());
+            } else {
+                showBanner(response.data.message || "Failed to load orders.", "error");
             }
         } catch (error) {
             console.log(error);
-            Alert.alert("Error", error.message);
+            const msg = error.message;
+            if (msg.includes('Network Error')) {
+                showBanner("Unable to connect. Check your internet connection.", "error");
+            } else {
+                showBanner(msg || "Failed to load orders.", "error");
+            }
         } finally {
             setLoading(false);
             setRefreshing(false);
@@ -69,6 +78,13 @@ const OrdersScreen = () => {
                         <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
                     }
                 >
+                    {/* Inline Banner */}
+                    {banner.message ? (
+                        <View style={{ marginTop: 8 }}>
+                            <InlineBanner message={banner.message} type={banner.type} onDismiss={clearBanner} />
+                        </View>
+                    ) : null}
+
                     {orderData.length > 0 ? (
                         orderData.map((item, index) => (
                             <View key={index} style={styles.orderCard}>

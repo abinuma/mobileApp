@@ -2,15 +2,20 @@ import React, { useEffect, useState, useContext } from 'react';
 import { View, Text, StyleSheet, ScrollView, Image, TouchableOpacity, Alert, ActivityIndicator } from 'react-native';
 import axios from 'axios';
 import { ShopContext } from '../../context/ShopContext';
+import InlineBanner, { useInlineBanner } from '../../components/InlineBanner';
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import { Trash2 } from 'lucide-react-native';
+import { Trash2, ArrowLeft } from 'lucide-react-native';
+import { useNavigation } from '@react-navigation/native';
 
 const ListProductsScreen = () => {
-  const { backendUrl, currency, products, setToken } = useContext(ShopContext); // Reusing list from context or refetch
+  const { backendUrl, currency } = useContext(ShopContext);
+  const navigation = useNavigation();
   const [list, setList] = useState([]);
   const [loading, setLoading] = useState(false);
+  const { banner, showBanner, clearBanner } = useInlineBanner();
 
   const fetchList = async () => {
+    setLoading(true);
     try {
       console.log(`[API Call] Fetching product list: ${backendUrl}/api/product/list`);
       const response = await axios.get(backendUrl + "/api/product/list");
@@ -18,11 +23,16 @@ const ListProductsScreen = () => {
       if (response.data.success) {
         setList(response.data.products);
       } else {
-        Alert.alert("Error", response.data.message);
+        showBanner(response.data.message || "Failed to load products.", "error");
       }
     } catch (error) {
       console.error('[API Error] Fetch list failed:', error.response?.data || error.message);
-      Alert.alert("Error", error.message);
+      const msg = error.message;
+      if (msg.includes('Network Error')) {
+        showBanner("Unable to connect. Check your internet connection.", "error");
+      } else {
+        showBanner(msg || "Failed to load products.", "error");
+      }
     } finally {
       setLoading(false);
     }
@@ -38,20 +48,19 @@ const ListProductsScreen = () => {
       console.log('[API Success] Remove product response:', response.data.success);
 
       if (response.data.success) {
-        Alert.alert("Success", response.data.message);
+        showBanner("Product deleted successfully.", "success");
         await fetchList();
       } else {
-        Alert.alert("Error", response.data.message);
-        setLoading(false);
+        showBanner(response.data.message || "Failed to delete product.", "error");
       }
     } catch (error) {
       console.error('[API Error] Remove product failed:', error.response?.data || error.message);
-      Alert.alert("Error", error.message);
-      setLoading(false);
+      showBanner(error.message || "Failed to delete product.", "error");
     }
   };
 
   const confirmDelete = (id) => {
+    // Keep Alert.alert for confirmation dialogs — this is appropriate UX
     Alert.alert(
       "Confirm Delete",
       "Are you sure you want to delete this product?",
@@ -68,7 +77,19 @@ const ListProductsScreen = () => {
 
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>All Products List</Text>
+      <View style={styles.headerRow}>
+        <Text style={styles.title}>All Products List</Text>
+        <TouchableOpacity 
+          style={styles.backToShop} 
+          onPress={() => navigation.reset({ index: 0, routes: [{ name: 'Main' }] })}
+        >
+          <ArrowLeft size={14} color="#6b7280" />
+          <Text style={styles.backToShopText}>Back to Shop</Text>
+        </TouchableOpacity>
+      </View>
+
+      {/* Inline Banner */}
+      <InlineBanner message={banner.message} type={banner.type} onDismiss={clearBanner} />
       
       {loading ? (
         <View style={styles.loadingBox}>
@@ -103,11 +124,30 @@ const styles = StyleSheet.create({
     backgroundColor: '#fff',
     padding: 16,
   },
+  headerRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 16,
+  },
   title: {
     fontSize: 18,
     fontWeight: 'bold',
     color: '#374151',
-    marginBottom: 16,
+  },
+  backToShop: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 4,
+    paddingHorizontal: 10,
+    backgroundColor: '#f3f4f6',
+    borderRadius: 16,
+  },
+  backToShopText: {
+    color: '#6b7280',
+    fontSize: 12,
+    marginLeft: 4,
+    fontWeight: '500',
   },
   loadingBox: {
     flex: 1,

@@ -1,14 +1,17 @@
 import React, { useState, useContext, useEffect } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Image, Alert, Platform } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Image, Platform } from 'react-native';
 import { TextInput, Button } from 'react-native-paper';
 import { ShopContext } from '../../context/ShopContext';
+import InlineBanner, { useInlineBanner } from '../../components/InlineBanner';
 import * as ImagePicker from 'expo-image-picker';
 import axios from 'axios';
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import { useNavigation } from '@react-navigation/native';
+import { ArrowLeft } from 'lucide-react-native';
 
 // Move ImageBox outside to prevent re-mounts on every state change
-const ImageBox = ({ image, onPress }) => (
-    <TouchableOpacity style={styles.imageBox} onPress={onPress}>
+const ImageBox = ({ image, onPress, hasError }) => (
+    <TouchableOpacity style={[styles.imageBox, hasError && styles.imageBoxError]} onPress={onPress}>
         {image ? (
             <Image 
                 source={{ uri: image.uri }} 
@@ -16,8 +19,8 @@ const ImageBox = ({ image, onPress }) => (
                 key={image.uri} // Ensure refresh on URI change
             />
         ) : (
-            <View style={styles.placeholderBox}>
-                <Text style={styles.placeholderText}>+</Text>
+            <View style={[styles.placeholderBox, hasError && styles.placeholderBoxError]}>
+                <Text style={[styles.placeholderText, hasError && { color: '#ef4444' }]}>+</Text>
             </View>
         )}
     </TouchableOpacity>
@@ -25,6 +28,8 @@ const ImageBox = ({ image, onPress }) => (
 
 const AddProductScreen = () => {
     const { backendUrl } = useContext(ShopContext);
+    const navigation = useNavigation();
+    const { banner, showBanner, clearBanner } = useInlineBanner();
     
     const [image1, setImage1] = useState(null);
     const [image2, setImage2] = useState(null);
@@ -39,15 +44,22 @@ const AddProductScreen = () => {
     const [sizes, setSizes] = useState([]);
     
     const [loading, setLoading] = useState(false);
+    const [fieldErrors, setFieldErrors] = useState({});
 
     // Track image1 specifically since it's the required one
     useEffect(() => {
         console.log(`[Diagnostic State Change] image1 is now: ${image1 ? "SET (uri: " + image1.uri.substring(0, 30) + "...)" : "NULL"}`);
     }, [image1]);
 
-    const pickImage = async (setter, name) => {
+    const clearFieldError = (field) => {
+        if (fieldErrors[field]) {
+            setFieldErrors(prev => ({ ...prev, [field]: false }));
+        }
+    };
+
+    const pickImage = async (setter, fieldName) => {
         try {
-            console.log(`[Diagnostic] Launching image picker for ${name}`);
+            console.log(`[Diagnostic] Launching image picker for ${fieldName}`);
             let result = await ImagePicker.launchImageLibraryAsync({
                 mediaTypes: ['images'],
                 allowsEditing: true,
@@ -55,14 +67,16 @@ const AddProductScreen = () => {
                 quality: 0.8,
             });
 
-            console.log(`[Diagnostic] Picker result for ${name}:`, result.canceled ? "Canceled" : "Success (assets: " + result.assets?.length + ")");
+            console.log(`[Diagnostic] Picker result for ${fieldName}:`, result.canceled ? "Canceled" : "Success (assets: " + result.assets?.length + ")");
 
             if (!result.canceled && result.assets && result.assets.length > 0) {
-                console.log(`[Diagnostic] Setting ${name} to:`, result.assets[0].uri);
+                console.log(`[Diagnostic] Setting ${fieldName} to:`, result.assets[0].uri);
                 setter(result.assets[0]);
+                clearFieldError(fieldName);
+                clearBanner();
             }
         } catch (e) {
-            console.error(`[Diagnostic Error] pickImage failed for ${name}:`, e.message);
+            console.error(`[Diagnostic Error] pickImage failed for ${fieldName}:`, e.message);
         }
     };
 
@@ -103,6 +117,8 @@ const AddProductScreen = () => {
     };
 
     const onSubmitHandler = async () => {
+        clearBanner();
+
         // Log all fields to see exactly what's going on
         console.log("[Diagnostic Validation Status]:", {
             name: name ? "PRESENT" : "MISSING",
@@ -112,18 +128,23 @@ const AddProductScreen = () => {
             image1_uri: image1?.uri || "N/A"
         });
 
-        if (!name || !description || !price || !image1) {
-            let missing = [];
-            if (!name) missing.push("Name");
-            if (!description) missing.push("Description");
-            if (!price) missing.push("Price");
-            if (!image1) missing.push("First Image");
-            
+        // Validate and highlight missing fields
+        const errors = {};
+        const missing = [];
+
+        if (!name) { errors.name = true; missing.push("Name"); }
+        if (!description) { errors.description = true; missing.push("Description"); }
+        if (!price) { errors.price = true; missing.push("Price"); }
+        if (!image1) { errors.image1 = true; missing.push("First Image"); }
+
+        if (missing.length > 0) {
             console.warn("[Diagnostic Result] Validation failed. Missing items:", missing);
-            Alert.alert("Missing Information", `Please provide: ${missing.join(", ")}.`);
+            setFieldErrors(errors);
+            showBanner(`Please provide: ${missing.join(", ")}.`, "error");
             return;
         }
 
+        setFieldErrors({});
         setLoading(true);
         console.log("[Diagnostic Start] Beginning Product Addition flow");
 
@@ -131,7 +152,7 @@ const AddProductScreen = () => {
             const adminToken = await AsyncStorage.getItem('adminToken');
             
             if (!adminToken) {
-                Alert.alert("Error", "Admin Token Missing. Please log in again.");
+                showBanner("Admin session expired. Please log in again.", "warning");
                 setLoading(false);
                 return;
             }
@@ -174,7 +195,7 @@ const AddProductScreen = () => {
             const response = await axios.post(backendUrl + "/api/product/add", formData, axiosConfig);
             
             if (response.data.success) {
-                Alert.alert("Success", "Product added successfully");
+                showBanner("Product added successfully! 🎉", "success");
                 setName("");
                 setDescription("");
                 setImage1(null);
@@ -185,12 +206,17 @@ const AddProductScreen = () => {
                 setSizes([]);
             } else {
                 console.error('[API Business Error] Message:', response.data.message);
-                Alert.alert("Error", response.data.message);
+                showBanner(response.data.message || "Failed to add product.", "error");
             }
 
         } catch (error) {
             console.error('[API Connection Error]:', error.response?.data || error.message);
-            Alert.alert("Error", error.response?.data?.message || error.message);
+            const msg = error.response?.data?.message || error.message;
+            if (msg.includes('Network Error')) {
+                showBanner("Unable to connect to server. Check your internet.", "error");
+            } else {
+                showBanner(msg || "Something went wrong. Please try again.", "error");
+            }
         } finally {
             setLoading(false);
             console.log("[Diagnostic End] Flow completed");
@@ -199,9 +225,21 @@ const AddProductScreen = () => {
 
     return (
         <ScrollView style={styles.container} contentContainerStyle={{ paddingBottom: 40 }}>
+            {/* Back to Shop Button */}
+            <TouchableOpacity 
+                style={styles.backToShop} 
+                onPress={() => navigation.reset({ index: 0, routes: [{ name: 'Main' }] })}
+            >
+                <ArrowLeft size={16} color="#6b7280" />
+                <Text style={styles.backToShopText}>Back to Shop</Text>
+            </TouchableOpacity>
+
+            {/* Inline Banner */}
+            <InlineBanner message={banner.message} type={banner.type} onDismiss={clearBanner} />
+
             <Text style={styles.label}>Upload Image (Box 1 Mandatory)</Text>
             <View style={styles.imagesRow}>
-                <ImageBox image={image1} onPress={() => pickImage(setImage1, "image1")} />
+                <ImageBox image={image1} onPress={() => pickImage(setImage1, "image1")} hasError={fieldErrors.image1} />
                 <ImageBox image={image2} onPress={() => pickImage(setImage2, "image2")} />
                 <ImageBox image={image3} onPress={() => pickImage(setImage3, "image3")} />
                 <ImageBox image={image4} onPress={() => pickImage(setImage4, "image4")} />
@@ -211,18 +249,24 @@ const AddProductScreen = () => {
                 mode="outlined"
                 label="Product name"
                 value={name}
-                onChangeText={setName}
+                onChangeText={(t) => { setName(t); clearFieldError('name'); clearBanner(); }}
                 style={styles.input}
+                outlineColor={fieldErrors.name ? '#ef4444' : undefined}
+                activeOutlineColor={fieldErrors.name ? '#ef4444' : '#000'}
+                error={fieldErrors.name}
             />
 
             <TextInput
                 mode="outlined"
                 label="Product description"
                 value={description}
-                onChangeText={setDescription}
+                onChangeText={(t) => { setDescription(t); clearFieldError('description'); clearBanner(); }}
                 multiline
                 numberOfLines={4}
                 style={styles.input}
+                outlineColor={fieldErrors.description ? '#ef4444' : undefined}
+                activeOutlineColor={fieldErrors.description ? '#ef4444' : '#000'}
+                error={fieldErrors.description}
             />
 
             <View style={styles.row}>
@@ -261,9 +305,12 @@ const AddProductScreen = () => {
                 mode="outlined"
                 label="Price"
                 value={price}
-                onChangeText={setPrice}
+                onChangeText={(t) => { setPrice(t); clearFieldError('price'); clearBanner(); }}
                 keyboardType="numeric"
                 style={styles.input}
+                outlineColor={fieldErrors.price ? '#ef4444' : undefined}
+                activeOutlineColor={fieldErrors.price ? '#ef4444' : '#000'}
+                error={fieldErrors.price}
             />
 
             <Text style={styles.label}>Product Sizes</Text>
@@ -299,6 +346,18 @@ const styles = StyleSheet.create({
         backgroundColor: '#fff',
         padding: 16,
     },
+    backToShop: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        marginBottom: 16,
+        paddingVertical: 8,
+    },
+    backToShopText: {
+        color: '#6b7280',
+        fontSize: 14,
+        marginLeft: 6,
+        fontWeight: '500',
+    },
     label: {
         fontSize: 14,
         color: '#4b5563',
@@ -320,6 +379,10 @@ const styles = StyleSheet.create({
         borderRadius: 4,
         overflow: 'hidden',
     },
+    imageBoxError: {
+        borderColor: '#ef4444',
+        borderWidth: 2,
+    },
     previewImage: {
         width: '100%',
         height: '100%',
@@ -329,6 +392,9 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         justifyContent: 'center',
         backgroundColor: '#f9fafb',
+    },
+    placeholderBoxError: {
+        backgroundColor: '#fef2f2',
     },
     placeholderText: {
         fontSize: 24,
