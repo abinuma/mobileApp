@@ -158,7 +158,12 @@ const CollectionScreen = () => {
 
       {/* Collapsible Filter Panel */}
       {showFilter && (
-        <View style={styles.filterPanel}>
+        <ScrollView 
+          style={styles.filterPanel} 
+          contentContainerStyle={styles.filterPanelContent}
+          nestedScrollEnabled={true}
+          showsVerticalScrollIndicator={true}
+        >
           {/* Category Section */}
           <View style={styles.filterSection}>
             <Text style={styles.filterSectionTitle}>CATEGORY</Text>
@@ -211,7 +216,7 @@ const CollectionScreen = () => {
               <Text style={styles.clearAllText}>Clear All Filters</Text>
             </TouchableOpacity>
           )}
-        </View>
+        </ScrollView>
       )}
 
       {/* Active Filter Summary (shown when panel is collapsed) */}
@@ -346,6 +351,9 @@ const styles = StyleSheet.create({
     backgroundColor: '#fafafa',
     borderBottomWidth: 1,
     borderBottomColor: '#e5e7eb',
+    maxHeight: 200,
+  },
+  filterPanelContent: {
     paddingHorizontal: 16,
     paddingTop: 16,
     paddingBottom: 12,

@@ -2,7 +2,6 @@ import React from 'react';
 import { StatusBar } from 'expo-status-bar';
 import AppNavigator from './src/navigation/AppNavigator';
 import ShopContextProvider from './src/context/ShopContext';
-import { ToastProvider } from './src/context/ToastContext';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { Provider as PaperProvider, MD3LightTheme as DefaultTheme } from 'react-native-paper';
 
@@ -20,10 +19,8 @@ export default function App() {
     <ShopContextProvider>
       <SafeAreaProvider>
         <PaperProvider theme={theme}>
-          <ToastProvider>
-            <AppNavigator />
-            <StatusBar style="dark" />
-          </ToastProvider>
+          <AppNavigator />
+          <StatusBar style="dark" />
         </PaperProvider>
       </SafeAreaProvider>
     </ShopContextProvider>

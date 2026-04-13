@@ -1,12 +1,12 @@
-import React, { useContext, useEffect, useRef, useState } from 'react';
-import { View, Text, TouchableOpacity, ScrollView, StyleSheet, Animated } from 'react-native';
+import React, { useContext, useState } from 'react';
+import { View, Text, TouchableOpacity, ScrollView, StyleSheet } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { ShopContext } from '../context/ShopContext';
 import axios from 'axios';
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { TextInput, Button, Avatar, List, Divider } from 'react-native-paper';
-import { Settings, LogOut, ShieldCheck, ShoppingBag, AlertCircle, CheckCircle, X } from 'lucide-react-native';
-import SharedInlineBanner, { useInlineBanner } from '../components/InlineBanner';
+import { Settings, LogOut, ShieldCheck, ShoppingBag } from 'lucide-react-native';
+import InlineBanner, { useInlineBanner } from '../components/InlineBanner';
 
 // --- Map raw backend messages to user-friendly messages ---
 const friendlyMessages = {
@@ -24,71 +24,6 @@ const getFriendlyMessage = (raw) => {
   return friendlyMessages[raw] || raw;
 };
 
-// --- Inline Banner Component ---
-const InlineBanner = ({ message, type, onDismiss }) => {
-  const fadeAnim = useRef(new Animated.Value(0)).current;
-
-  useEffect(() => {
-    Animated.timing(fadeAnim, { toValue: 1, duration: 300, useNativeDriver: true }).start();
-    const timer = setTimeout(() => {
-      Animated.timing(fadeAnim, { toValue: 0, duration: 300, useNativeDriver: true }).start(() => {
-        if (onDismiss) onDismiss();
-      });
-    }, 5000);
-    return () => clearTimeout(timer);
-  }, [message]);
-
-  if (!message) return null;
-
-  const isError = type === 'error';
-  return (
-    <Animated.View style={[
-      bannerStyles.container,
-      isError ? bannerStyles.errorBg : bannerStyles.successBg,
-      { opacity: fadeAnim },
-    ]}>
-      {isError
-        ? <AlertCircle color="#991b1b" size={18} style={{ marginRight: 8 }} />
-        : <CheckCircle color="#166534" size={18} style={{ marginRight: 8 }} />
-      }
-      <Text style={[bannerStyles.text, isError ? bannerStyles.errorText : bannerStyles.successText]} numberOfLines={3}>
-        {message}
-      </Text>
-      <TouchableOpacity onPress={onDismiss} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
-        <X color={isError ? '#991b1b' : '#166534'} size={16} />
-      </TouchableOpacity>
-    </Animated.View>
-  );
-};
-
-const bannerStyles = StyleSheet.create({
-  container: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    width: '100%',
-    paddingVertical: 12,
-    paddingHorizontal: 14,
-    borderRadius: 8,
-    marginBottom: 16,
-  },
-  errorBg: {
-    backgroundColor: '#fef2f2',
-    borderWidth: 1,
-    borderColor: '#fecaca',
-  },
-  successBg: {
-    backgroundColor: '#f0fdf4',
-    borderWidth: 1,
-    borderColor: '#bbf7d0',
-  },
-  text: {
-    flex: 1,
-    fontSize: 13,
-    lineHeight: 18,
-  },
-  errorText: { color: '#991b1b' },
-  successText: { color: '#166534' },
-});
 
 const LoginScreen = ({ navigation }) => {
   const [currentState, setCurrentState] = useState('Login');
@@ -98,16 +33,8 @@ const LoginScreen = ({ navigation }) => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
-
-  // Banner state
-  const [banner, setBanner] = useState({ message: '', type: 'error' }); // type: 'error' | 'success'
-
-  const showBanner = (message, type = 'error') => {
-    setBanner({ message: '', type }); // reset to re-trigger animation
-    setTimeout(() => setBanner({ message, type }), 50);
-  };
-
-  const clearBanner = () => setBanner({ message: '', type: 'error' });
+  const [fieldErrors, setFieldErrors] = useState({});
+  const { banner, showBanner, clearBanner } = useInlineBanner();
 
   // Logout functionality
   const logout = async () => {
@@ -121,18 +48,36 @@ const LoginScreen = ({ navigation }) => {
     }
   };
 
+  const clearFieldError = (field) => {
+    if (fieldErrors[field]) {
+      setFieldErrors(prev => ({ ...prev, [field]: false }));
+    }
+  };
+
   const onSubmitHandler = async () => {
     clearBanner();
 
-    if (!email || !password) {
-      showBanner('Please enter both email and password.');
+    // Validate and highlight fields
+    const errors = {};
+    if (!email.trim()) errors.email = true;
+    if (!password.trim()) errors.password = true;
+    if (currentState === 'Sign Up' && !name.trim()) errors.name = true;
+
+    if (errors.email || errors.password || errors.name) {
+      setFieldErrors(errors);
+      if (errors.email && errors.password) {
+        showBanner('Please enter both email and password.');
+      } else if (errors.email) {
+        showBanner('Please enter your email address.');
+      } else if (errors.password) {
+        showBanner('Please enter your password.');
+      } else if (errors.name) {
+        showBanner('Please enter your name.');
+      }
       return;
     }
 
-    if (currentState === 'Sign Up' && !name) {
-      showBanner('Please enter your name.');
-      return;
-    }
+    setFieldErrors({});
 
     // Client-side email format check
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -303,7 +248,10 @@ const LoginScreen = ({ navigation }) => {
               label="Name"
               style={styles.input}
               value={name}
-              onChangeText={(t) => { clearBanner(); setName(t); }}
+              onChangeText={(t) => { clearBanner(); clearFieldError('name'); setName(t); }}
+              outlineColor={fieldErrors.name ? '#ef4444' : undefined}
+              activeOutlineColor={fieldErrors.name ? '#ef4444' : '#000'}
+              error={fieldErrors.name}
             />
           )}
 
@@ -314,7 +262,10 @@ const LoginScreen = ({ navigation }) => {
             autoCapitalize="none"
             style={styles.input}
             value={email}
-            onChangeText={(t) => { clearBanner(); setEmail(t); }}
+            onChangeText={(t) => { clearBanner(); clearFieldError('email'); setEmail(t); }}
+            outlineColor={fieldErrors.email ? '#ef4444' : undefined}
+            activeOutlineColor={fieldErrors.email ? '#ef4444' : '#000'}
+            error={fieldErrors.email}
           />
 
           <TextInput
@@ -323,7 +274,10 @@ const LoginScreen = ({ navigation }) => {
             secureTextEntry
             style={styles.input}
             value={password}
-            onChangeText={(t) => { clearBanner(); setPassword(t); }}
+            onChangeText={(t) => { clearBanner(); clearFieldError('password'); setPassword(t); }}
+            outlineColor={fieldErrors.password ? '#ef4444' : undefined}
+            activeOutlineColor={fieldErrors.password ? '#ef4444' : '#000'}
+            error={fieldErrors.password}
           />
 
           <View style={styles.linkRow}>

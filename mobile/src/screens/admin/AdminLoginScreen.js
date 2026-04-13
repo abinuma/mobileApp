@@ -1,76 +1,42 @@
-import React, { useContext, useEffect, useRef, useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, KeyboardAvoidingView, Platform, Animated } from 'react-native';
+import React, { useContext, useState } from 'react';
+import { View, Text, StyleSheet, TouchableOpacity, KeyboardAvoidingView, Platform } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { TextInput, Button } from 'react-native-paper';
 import axios from 'axios';
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { ShopContext } from '../../context/ShopContext';
-import { AlertCircle, X } from 'lucide-react-native';
-
-// --- Inline Error Banner ---
-const ErrorBanner = ({ message, onDismiss }) => {
-  const fadeAnim = useRef(new Animated.Value(0)).current;
-
-  useEffect(() => {
-    Animated.timing(fadeAnim, { toValue: 1, duration: 300, useNativeDriver: true }).start();
-    const timer = setTimeout(() => {
-      Animated.timing(fadeAnim, { toValue: 0, duration: 300, useNativeDriver: true }).start(() => {
-        if (onDismiss) onDismiss();
-      });
-    }, 5000);
-    return () => clearTimeout(timer);
-  }, [message]);
-
-  if (!message) return null;
-
-  return (
-    <Animated.View style={[errorStyles.container, { opacity: fadeAnim }]}>
-      <AlertCircle color="#991b1b" size={18} style={{ marginRight: 8 }} />
-      <Text style={errorStyles.text} numberOfLines={3}>{message}</Text>
-      <TouchableOpacity onPress={onDismiss} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
-        <X color="#991b1b" size={16} />
-      </TouchableOpacity>
-    </Animated.View>
-  );
-};
-
-const errorStyles = StyleSheet.create({
-  container: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#fef2f2',
-    borderWidth: 1,
-    borderColor: '#fecaca',
-    paddingVertical: 12,
-    paddingHorizontal: 14,
-    borderRadius: 8,
-    marginBottom: 16,
-  },
-  text: { flex: 1, fontSize: 13, lineHeight: 18, color: '#991b1b' },
-});
+import InlineBanner, { useInlineBanner } from '../../components/InlineBanner';
 
 const AdminLoginScreen = ({ navigation }) => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
-  const [errorMsg, setErrorMsg] = useState('');
+  const [fieldErrors, setFieldErrors] = useState({});
   const { backendUrl } = useContext(ShopContext);
+  const { banner, showBanner, clearBanner } = useInlineBanner();
 
-  const showError = (msg) => {
-    setErrorMsg('');
-    setTimeout(() => setErrorMsg(msg), 50);
+  const clearFieldError = (field) => {
+    if (fieldErrors[field]) {
+      setFieldErrors(prev => ({ ...prev, [field]: false }));
+    }
   };
 
-  const clearError = () => setErrorMsg('');
-
   const handleLogin = async () => {
-    clearError();
+    clearBanner();
 
-    if (!email || !password) {
-      showError('Please enter both email and password.');
+    // Validate and highlight
+    const errors = {};
+    const missing = [];
+    if (!email.trim()) { errors.email = true; missing.push('Email'); }
+    if (!password.trim()) { errors.password = true; missing.push('Password'); }
+
+    if (missing.length > 0) {
+      setFieldErrors(errors);
+      showBanner(`Please enter ${missing.join(' and ').toLowerCase()}.`, 'error');
       return;
     }
-    
+
+    setFieldErrors({});
     setLoading(true);
     try {
       console.log(`[API Call] Admin login: ${backendUrl}/api/user/admin`);
@@ -78,9 +44,7 @@ const AdminLoginScreen = ({ navigation }) => {
       console.log('[API Success] Admin login response:', response.data.success);
       
       if (response.data.success) {
-        // Successful login
         await AsyncStorage.setItem('adminToken', response.data.token);
-        // Navigate to Admin Dashboard (ListProducts or AddProduct)
         navigation.reset({
           index: 0,
           routes: [{ name: 'AdminDashboard' }],
@@ -88,18 +52,18 @@ const AdminLoginScreen = ({ navigation }) => {
       } else {
         const raw = response.data.message;
         if (raw === 'Invalid credentials') {
-          showError('Incorrect admin email or password. Please try again.');
+          showBanner('Incorrect admin email or password. Please try again.');
         } else {
-          showError(raw || 'Admin login failed. Please check your credentials.');
+          showBanner(raw || 'Admin login failed. Please check your credentials.');
         }
       }
     } catch (error) {
       console.error('[API Error] Admin login failed:', error.response?.data || error.message);
       const rawMsg = error.response?.data?.message || error.message;
       if (rawMsg.includes('Network Error')) {
-        showError('Unable to connect to server. Check your internet connection.');
+        showBanner('Unable to connect to server. Check your internet connection.');
       } else {
-        showError(rawMsg || 'Something went wrong. Please try again.');
+        showBanner(rawMsg || 'Something went wrong. Please try again.');
       }
     } finally {
       setLoading(false);
@@ -115,17 +79,20 @@ const AdminLoginScreen = ({ navigation }) => {
         <View style={styles.card}>
           <Text style={styles.title}>Admin Panel</Text>
 
-          {/* Inline error banner */}
-          <ErrorBanner message={errorMsg} onDismiss={clearError} />
+          {/* Inline banner */}
+          <InlineBanner message={banner.message} type={banner.type} onDismiss={clearBanner} />
           
           <TextInput
             mode="outlined"
             label="Admin Email Address"
             style={styles.input}
             value={email}
-            onChangeText={(t) => { clearError(); setEmail(t); }}
+            onChangeText={(t) => { clearBanner(); clearFieldError('email'); setEmail(t); }}
             autoCapitalize="none"
             keyboardType="email-address"
+            outlineColor={fieldErrors.email ? '#ef4444' : undefined}
+            activeOutlineColor={fieldErrors.email ? '#ef4444' : '#000'}
+            error={fieldErrors.email}
           />
           
           <TextInput
@@ -133,8 +100,11 @@ const AdminLoginScreen = ({ navigation }) => {
             label="Password"
             style={styles.input}
             value={password}
-            onChangeText={(t) => { clearError(); setPassword(t); }}
+            onChangeText={(t) => { clearBanner(); clearFieldError('password'); setPassword(t); }}
             secureTextEntry
+            outlineColor={fieldErrors.password ? '#ef4444' : undefined}
+            activeOutlineColor={fieldErrors.password ? '#ef4444' : '#000'}
+            error={fieldErrors.password}
           />
 
           <Button 

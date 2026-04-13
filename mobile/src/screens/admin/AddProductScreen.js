@@ -82,6 +82,8 @@ const AddProductScreen = () => {
 
     const toggleSize = (size) => {
         setSizes(prev => prev.includes(size) ? prev.filter(item => item !== size) : [...prev, size]);
+        clearFieldError('sizes');
+        clearBanner();
     };
 
     const getFileForFormData = async (imageAsset, fieldName) => {
@@ -136,6 +138,7 @@ const AddProductScreen = () => {
         if (!description) { errors.description = true; missing.push("Description"); }
         if (!price) { errors.price = true; missing.push("Price"); }
         if (!image1) { errors.image1 = true; missing.push("First Image"); }
+        if (sizes.length === 0) { errors.sizes = true; missing.push("At least one Size"); }
 
         if (missing.length > 0) {
             console.warn("[Diagnostic Result] Validation failed. Missing items:", missing);
@@ -313,15 +316,17 @@ const AddProductScreen = () => {
                 error={fieldErrors.price}
             />
 
-            <Text style={styles.label}>Product Sizes</Text>
-            <View style={styles.sizesRow}>
+            <Text style={[styles.label, fieldErrors.sizes && { color: '#ef4444' }]}>
+                Product Sizes {fieldErrors.sizes ? '— select at least one' : ''}
+            </Text>
+            <View style={[styles.sizesRow, fieldErrors.sizes && styles.sizesRowError]}>
                 {["S", "M", "L", "XL", "XXL"].map((sizeObj) => (
                     <TouchableOpacity 
                         key={sizeObj} 
-                        style={[styles.sizeBox, sizes.includes(sizeObj) && styles.sizeBoxActive]}
+                        style={[styles.sizeBox, sizes.includes(sizeObj) && styles.sizeBoxActive, fieldErrors.sizes && styles.sizeBoxError]}
                         onPress={() => toggleSize(sizeObj)}
                     >
-                        <Text style={[styles.sizeText, sizes.includes(sizeObj) && styles.sizeTextActive]}>{sizeObj}</Text>
+                        <Text style={[styles.sizeText, sizes.includes(sizeObj) && styles.sizeTextActive, fieldErrors.sizes && !sizes.includes(sizeObj) && { color: '#ef4444' }]}>{sizeObj}</Text>
                     </TouchableOpacity>
                 ))}
             </View>
@@ -441,6 +446,14 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
         gap: 8,
         marginBottom: 24,
+        padding: 8,
+        borderRadius: 6,
+        borderWidth: 1,
+        borderColor: 'transparent',
+    },
+    sizesRowError: {
+        borderColor: '#fca5a5',
+        backgroundColor: '#fef2f2',
     },
     sizeBox: {
         width: 40,
@@ -455,6 +468,9 @@ const styles = StyleSheet.create({
     sizeBoxActive: {
         backgroundColor: '#fed7aa', // orange-200
         borderColor: '#f97316', // orange-500
+    },
+    sizeBoxError: {
+        borderColor: '#fca5a5',
     },
     sizeText: {
         color: '#374151',

@@ -8,7 +8,7 @@ import InlineBanner, { useInlineBanner } from '../components/InlineBanner';
 
 const ProductDetailScreen = ({ route, navigation }) => {
   const { productId } = route.params || {};
-  const { products, currency, addToCart } = useContext(ShopContext);
+  const { products, currency, addToCart, token } = useContext(ShopContext);
   const { banner, showBanner, clearBanner } = useInlineBanner();
   
   const [productData, setProductData] = useState(null);
@@ -32,6 +32,13 @@ const ProductDetailScreen = ({ route, navigation }) => {
   }, [productId, products]);
 
   const handleAddToCart = async () => {
+    if (!token) {
+      showBanner("Please login to place an order.", "warning");
+      setTimeout(() => {
+        navigation.navigate('Profile', { screen: 'ProfileMain' });
+      }, 1500);
+      return;
+    }
     if (!size) {
       setSizeError(true);
       showBanner("Please select a size before adding to cart.", "warning");

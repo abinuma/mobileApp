@@ -53,6 +53,9 @@ const PlaceOrderScreen = ({ navigation }) => {
 
         if (!token) {
             showBanner("Please login to place an order.", "warning");
+            setTimeout(() => {
+                navigation.navigate('Profile', { screen: 'ProfileMain' });
+            }, 1500);
             return;
         }
 
