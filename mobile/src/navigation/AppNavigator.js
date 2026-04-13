@@ -88,8 +88,24 @@ const MainTabs = () => {
         headerShown: false,
       })}
     >
-      <Tab.Screen name="Home" component={HomeStack} />
-      <Tab.Screen name="Collection" component={CollectionStack} />
+      <Tab.Screen
+        name="Home"
+        component={HomeStack}
+        listeners={({ navigation }) => ({
+          tabPress: (e) => {
+            navigation.navigate('Home', { screen: 'HomeMain' });
+          },
+        })}
+      />
+      <Tab.Screen
+        name="Collection"
+        component={CollectionStack}
+        listeners={({ navigation }) => ({
+          tabPress: (e) => {
+            navigation.navigate('Collection', { screen: 'CollectionMain' });
+          },
+        })}
+      />
       <Tab.Screen 
         name="Cart" 
         component={CartStack} 
@@ -106,9 +122,22 @@ const MainTabs = () => {
             lineHeight: 14,
             textAlign: 'center'
           }
-        }} 
+        }}
+        listeners={({ navigation }) => ({
+          tabPress: (e) => {
+            navigation.navigate('Cart', { screen: 'CartMain' });
+          },
+        })}
       />
-      <Tab.Screen name="Profile" component={ProfileStack} />
+      <Tab.Screen
+        name="Profile"
+        component={ProfileStack}
+        listeners={({ navigation }) => ({
+          tabPress: (e) => {
+            navigation.navigate('Profile', { screen: 'ProfileMain' });
+          },
+        })}
+      />
     </Tab.Navigator>
   );
 };

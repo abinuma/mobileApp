@@ -1,11 +1,93 @@
-import React, { useContext, useEffect, useState } from 'react';
-import { View, Text, TouchableOpacity, ScrollView, Alert, StyleSheet } from 'react-native';
+import React, { useContext, useEffect, useRef, useState } from 'react';
+import { View, Text, TouchableOpacity, ScrollView, Alert, StyleSheet, Animated } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { ShopContext } from '../context/ShopContext';
 import axios from 'axios';
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { TextInput, Button, Avatar, List, Divider } from 'react-native-paper';
-import { Settings, LogOut, ShieldCheck, ShoppingBag } from 'lucide-react-native';
+import { Settings, LogOut, ShieldCheck, ShoppingBag, AlertCircle, CheckCircle, X } from 'lucide-react-native';
+
+// --- Map raw backend messages to user-friendly messages ---
+const friendlyMessages = {
+  // Login errors
+  "User doesn't exist":        "No account found with this email. Please sign up first.",
+  "Invalid credentials":       "Incorrect password. Please try again.",
+  // Registration errors
+  "User already exists":       "An account with this email already exists. Try logging in.",
+  "Please enter a valid email": "The email address you entered is not valid.",
+  "Please enter a strong password": "Password is too short. Use at least 4 characters.",
+};
+
+const getFriendlyMessage = (raw) => {
+  if (!raw) return "Something went wrong. Please try again.";
+  return friendlyMessages[raw] || raw;
+};
+
+// --- Inline Banner Component ---
+const InlineBanner = ({ message, type, onDismiss }) => {
+  const fadeAnim = useRef(new Animated.Value(0)).current;
+
+  useEffect(() => {
+    Animated.timing(fadeAnim, { toValue: 1, duration: 300, useNativeDriver: true }).start();
+    const timer = setTimeout(() => {
+      Animated.timing(fadeAnim, { toValue: 0, duration: 300, useNativeDriver: true }).start(() => {
+        if (onDismiss) onDismiss();
+      });
+    }, 5000);
+    return () => clearTimeout(timer);
+  }, [message]);
+
+  if (!message) return null;
+
+  const isError = type === 'error';
+  return (
+    <Animated.View style={[
+      bannerStyles.container,
+      isError ? bannerStyles.errorBg : bannerStyles.successBg,
+      { opacity: fadeAnim },
+    ]}>
+      {isError
+        ? <AlertCircle color="#991b1b" size={18} style={{ marginRight: 8 }} />
+        : <CheckCircle color="#166534" size={18} style={{ marginRight: 8 }} />
+      }
+      <Text style={[bannerStyles.text, isError ? bannerStyles.errorText : bannerStyles.successText]} numberOfLines={3}>
+        {message}
+      </Text>
+      <TouchableOpacity onPress={onDismiss} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
+        <X color={isError ? '#991b1b' : '#166534'} size={16} />
+      </TouchableOpacity>
+    </Animated.View>
+  );
+};
+
+const bannerStyles = StyleSheet.create({
+  container: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    width: '100%',
+    paddingVertical: 12,
+    paddingHorizontal: 14,
+    borderRadius: 8,
+    marginBottom: 16,
+  },
+  errorBg: {
+    backgroundColor: '#fef2f2',
+    borderWidth: 1,
+    borderColor: '#fecaca',
+  },
+  successBg: {
+    backgroundColor: '#f0fdf4',
+    borderWidth: 1,
+    borderColor: '#bbf7d0',
+  },
+  text: {
+    flex: 1,
+    fontSize: 13,
+    lineHeight: 18,
+  },
+  errorText: { color: '#991b1b' },
+  successText: { color: '#166534' },
+});
 
 const LoginScreen = ({ navigation }) => {
   const [currentState, setCurrentState] = useState('Login');
@@ -16,26 +98,51 @@ const LoginScreen = ({ navigation }) => {
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
 
+  // Banner state
+  const [banner, setBanner] = useState({ message: '', type: 'error' }); // type: 'error' | 'success'
+
+  const showBanner = (message, type = 'error') => {
+    setBanner({ message: '', type }); // reset to re-trigger animation
+    setTimeout(() => setBanner({ message, type }), 50);
+  };
+
+  const clearBanner = () => setBanner({ message: '', type: 'error' });
+
   // Logout functionality
   const logout = async () => {
     try {
       await AsyncStorage.removeItem('token');
       setToken('');
       setCartItems({});
-      Alert.alert("Success", "You have been logged out.");
+      showBanner("You have been logged out.", 'success');
     } catch (error) {
       console.error("Logout error:", error);
     }
   };
 
   const onSubmitHandler = async () => {
+    clearBanner();
+
     if (!email || !password) {
-      Alert.alert('Error', 'Please enter both email and password.');
+      showBanner('Please enter both email and password.');
       return;
     }
 
     if (currentState === 'Sign Up' && !name) {
-      Alert.alert('Error', 'Please enter your name.');
+      showBanner('Please enter your name.');
+      return;
+    }
+
+    // Client-side email format check
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      showBanner('Please enter a valid email address.');
+      return;
+    }
+
+    // Client-side password length check
+    if (currentState === 'Sign Up' && password.length < 4) {
+      showBanner('Password must be at least 4 characters long.');
       return;
     }
 
@@ -55,7 +162,7 @@ const LoginScreen = ({ navigation }) => {
               routes: [{ name: 'AdminDashboard' }],
             });
           } else {
-            Alert.alert('Admin Error', response.data.message);
+            showBanner(getFriendlyMessage(response.data.message));
           }
           setLoading(false);
           return;
@@ -69,9 +176,9 @@ const LoginScreen = ({ navigation }) => {
         if (response.data.success) {
           setToken(response.data.token);
           await AsyncStorage.setItem('token', response.data.token);
-          Alert.alert("Success", "Account created successfully!");
+          showBanner("Account created successfully! Welcome aboard.", 'success');
         } else {
-          Alert.alert('Error', response.data.message);
+          showBanner(getFriendlyMessage(response.data.message));
         }
       } else {
         console.log(`[Diagnostic] User login attempt: ${email} at ${backendUrl}/api/user/login`);
@@ -81,12 +188,20 @@ const LoginScreen = ({ navigation }) => {
           setToken(response.data.token);
           await AsyncStorage.setItem('token', response.data.token);
         } else {
-          Alert.alert('Error', response.data.message);
+          showBanner(getFriendlyMessage(response.data.message));
         }
       }
     } catch (error) {
       console.error('[API Error] submission failed:', error.response?.data || error.message);
-      Alert.alert('Error', error.response?.data?.message || error.message);
+      const rawMsg = error.response?.data?.message || error.message;
+      // Network / server errors
+      if (rawMsg.includes('Network Error')) {
+        showBanner("Unable to connect to server. Check your internet connection.");
+      } else if (rawMsg.includes('timeout')) {
+        showBanner("Request timed out. Please try again.");
+      } else {
+        showBanner(getFriendlyMessage(rawMsg));
+      }
     } finally {
       setLoading(false);
     }
@@ -102,6 +217,13 @@ const LoginScreen = ({ navigation }) => {
             <Text style={styles.profileName}>My Account</Text>
             <Text style={styles.profileEmail}>Manage your profile and orders</Text>
           </View>
+
+          {/* Profile banner (e.g. logout success) */}
+          {banner.message ? (
+            <View style={{ paddingHorizontal: 16, marginBottom: 8 }}>
+              <InlineBanner message={banner.message} type={banner.type} onDismiss={clearBanner} />
+            </View>
+          ) : null}
 
           <View style={styles.menuSection}>
              <List.Item
@@ -171,13 +293,16 @@ const LoginScreen = ({ navigation }) => {
             <View style={styles.titleUnderline} />
           </View>
 
+          {/* Inline error/success banner */}
+          <InlineBanner message={banner.message} type={banner.type} onDismiss={clearBanner} />
+
           {currentState !== 'Login' && (
             <TextInput
               mode="outlined"
               label="Name"
               style={styles.input}
               value={name}
-              onChangeText={setName}
+              onChangeText={(t) => { clearBanner(); setName(t); }}
             />
           )}
 
@@ -188,7 +313,7 @@ const LoginScreen = ({ navigation }) => {
             autoCapitalize="none"
             style={styles.input}
             value={email}
-            onChangeText={setEmail}
+            onChangeText={(t) => { clearBanner(); setEmail(t); }}
           />
 
           <TextInput
@@ -197,7 +322,7 @@ const LoginScreen = ({ navigation }) => {
             secureTextEntry
             style={styles.input}
             value={password}
-            onChangeText={setPassword}
+            onChangeText={(t) => { clearBanner(); setPassword(t); }}
           />
 
           <View style={styles.linkRow}>
@@ -205,11 +330,11 @@ const LoginScreen = ({ navigation }) => {
               <Text style={styles.linkTextMuted}>Forgot your password?</Text>
             </TouchableOpacity>
             {currentState === 'Login' ? (
-              <TouchableOpacity onPress={() => setCurrentState('Sign Up')}>
+              <TouchableOpacity onPress={() => { clearBanner(); setCurrentState('Sign Up'); }}>
                 <Text style={styles.linkTextBold}>Create account</Text>
               </TouchableOpacity>
             ) : (
-              <TouchableOpacity onPress={() => setCurrentState('Login')}>
+              <TouchableOpacity onPress={() => { clearBanner(); setCurrentState('Login'); }}>
                 <Text style={styles.linkTextBold}>Login Here</Text>
               </TouchableOpacity>
             )}
@@ -337,3 +462,4 @@ const styles = StyleSheet.create({
 });
 
 export default LoginScreen;
+

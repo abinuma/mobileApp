@@ -1,5 +1,5 @@
-import React, { useContext, useEffect, useState } from 'react';
-import { View, Text, ScrollView, StyleSheet } from 'react-native';
+import React, { useContext, useEffect, useState, useCallback } from 'react';
+import { View, Text, ScrollView, StyleSheet, RefreshControl } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { ShopContext } from '../context/ShopContext';
 import ProductItem from '../components/ProductItem';
@@ -9,8 +9,9 @@ import OurPolicy from '../components/OurPolicy';
 import NewsletterBox from '../components/NewsletterBox';
 
 const HomeScreen = () => {
-  const { products } = useContext(ShopContext);
+  const { products, getProductsData } = useContext(ShopContext);
   const [latestProducts, setLatestProducts] = useState([]);
+  const [refreshing, setRefreshing] = useState(false);
 
   useEffect(() => {
     if (products && products.length > 0) {
@@ -18,9 +19,30 @@ const HomeScreen = () => {
     }
   }, [products]);
 
+  // Pull-to-refresh
+  const onRefresh = useCallback(async () => {
+    setRefreshing(true);
+    try {
+      await getProductsData();
+    } catch (e) {
+      // error handled inside getProductsData
+    }
+    setRefreshing(false);
+  }, [getProductsData]);
+
   return (
     <SafeAreaView style={styles.safeArea}>
-      <ScrollView contentContainerStyle={styles.scrollContent}>
+      <ScrollView
+        contentContainerStyle={styles.scrollContent}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={onRefresh}
+            tintColor="#000"
+            colors={['#000']}
+          />
+        }
+      >
         
         {/* Hero Section */}
         <View style={styles.heroSection}>
@@ -104,3 +126,4 @@ const styles = StyleSheet.create({
 });
 
 export default HomeScreen;
+
