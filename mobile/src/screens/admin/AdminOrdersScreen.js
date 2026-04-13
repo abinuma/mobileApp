@@ -13,6 +13,7 @@ const AdminOrdersScreen = () => {
     const navigation = useNavigation();
     const [orders, setOrders] = useState([]);
     const [loading, setLoading] = useState(false);
+    const [updatingOrderId, setUpdatingOrderId] = useState(null);
     const { banner, showBanner, clearBanner } = useInlineBanner();
 
     const fetchAllOrders = async () => {
@@ -46,6 +47,7 @@ const AdminOrdersScreen = () => {
 
     const statusHandler = async (orderId, newStatus) => {
         const token = await AsyncStorage.getItem('adminToken');
+        setUpdatingOrderId(orderId);
         try {
             console.log(`[API Call] Updating order status: ${backendUrl}/api/order/status`);
             const response = await axios.patch(
@@ -63,6 +65,8 @@ const AdminOrdersScreen = () => {
         } catch (error) {
             console.error('[API Error] Status update failed:', error.response?.data || error.message);
             showBanner(error.message || "Failed to update order status.", "error");
+        } finally {
+            setUpdatingOrderId(null);
         }
     };
 
@@ -137,6 +141,12 @@ const AdminOrdersScreen = () => {
                                     
                                     <View style={styles.statusPickerContainer}>
                                         <Text style={styles.statusLabel}>Update Status:</Text>
+                                        {updatingOrderId === order._id ? (
+                                            <View style={{ paddingVertical: 12, alignItems: 'center' }}>
+                                                <ActivityIndicator size="small" color="#000" />
+                                                <Text style={{ fontSize: 11, color: '#6b7280', marginTop: 4 }}>Updating...</Text>
+                                            </View>
+                                        ) : (
                                         <View style={styles.statusButtons}>
                                             {['Order Placed', 'Packing', 'Shipped', 'Out for delivery', 'Delivered'].map((status) => (
                                                 <TouchableOpacity 
@@ -146,6 +156,7 @@ const AdminOrdersScreen = () => {
                                                         styles.statusBtn, 
                                                         order.status === status && styles.statusBtnActive
                                                      ]}
+                                                    disabled={updatingOrderId !== null}
                                                 >
                                                     <Text style={[styles.statusBtnText, order.status === status && styles.statusBtnTextActive]}>
                                                         {status === 'Order Placed' ? 'Placed' : status}
@@ -153,6 +164,7 @@ const AdminOrdersScreen = () => {
                                                 </TouchableOpacity>
                                             ))}
                                         </View>
+                                        )}
                                     </View>
                                 </View>
                             </View>

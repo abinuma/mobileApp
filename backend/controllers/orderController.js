@@ -45,7 +45,7 @@ const placeOrderStripe = async (req,res) => {
     try {
         const userId = req.userId;
         const {items, amount, address} = req.body;
-        const {origin} = req.headers;
+        const origin = req.headers.origin || process.env.FRONTEND_URL || 'https://crownwear-backend.vercel.app';
 
         const orderData = {
             userId,

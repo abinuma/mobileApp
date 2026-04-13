@@ -12,6 +12,7 @@ const ListProductsScreen = () => {
   const navigation = useNavigation();
   const [list, setList] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [deletingId, setDeletingId] = useState(null);
   const { banner, showBanner, clearBanner } = useInlineBanner();
 
   const fetchList = async () => {
@@ -39,6 +40,7 @@ const ListProductsScreen = () => {
   };
 
   const removeProduct = async (id) => {
+    setDeletingId(id);
     try {
       const adminToken = await AsyncStorage.getItem('adminToken');
       console.log(`[API Call] Removing product: ${backendUrl}/api/product/${id}`);
@@ -56,6 +58,8 @@ const ListProductsScreen = () => {
     } catch (error) {
       console.error('[API Error] Remove product failed:', error.response?.data || error.message);
       showBanner(error.message || "Failed to delete product.", "error");
+    } finally {
+      setDeletingId(null);
     }
   };
 
@@ -107,8 +111,12 @@ const ListProductsScreen = () => {
                 <Text style={styles.itemPrice}>{currency}{item.price}</Text>
               </View>
               
-              <TouchableOpacity onPress={() => confirmDelete(item._id)} style={styles.deleteBtn}>
-                <Trash2 color="#ef4444" size={20} />
+              <TouchableOpacity onPress={() => confirmDelete(item._id)} style={styles.deleteBtn} disabled={deletingId === item._id}>
+                {deletingId === item._id ? (
+                  <ActivityIndicator size={20} color="#ef4444" />
+                ) : (
+                  <Trash2 color="#ef4444" size={20} />
+                )}
               </TouchableOpacity>
             </View>
           ))}

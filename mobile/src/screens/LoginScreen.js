@@ -1,5 +1,5 @@
 import React, { useContext, useState } from 'react';
-import { View, Text, TouchableOpacity, ScrollView, StyleSheet } from 'react-native';
+import { View, Text, TouchableOpacity, ScrollView, StyleSheet, ActivityIndicator } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { ShopContext } from '../context/ShopContext';
 import axios from 'axios';
@@ -33,11 +33,13 @@ const LoginScreen = ({ navigation }) => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
+  const [logoutLoading, setLogoutLoading] = useState(false);
   const [fieldErrors, setFieldErrors] = useState({});
   const { banner, showBanner, clearBanner } = useInlineBanner();
 
   // Logout functionality
   const logout = async () => {
+    setLogoutLoading(true);
     try {
       await AsyncStorage.removeItem('token');
       setToken('');
@@ -45,6 +47,8 @@ const LoginScreen = ({ navigation }) => {
       showBanner("You have been logged out.", 'success');
     } catch (error) {
       console.error("Logout error:", error);
+    } finally {
+      setLogoutLoading(false);
     }
   };
 
@@ -217,10 +221,14 @@ const LoginScreen = ({ navigation }) => {
             />
             <Divider />
             <List.Item
-              title="Logout"
+              title={logoutLoading ? "Logging out..." : "Logout"}
               titleStyle={{ color: '#ef4444' }}
-              left={props => <LogOut color="#ef4444" size={20} style={{ marginTop: 10 }} />}
+              left={props => logoutLoading 
+                ? <ActivityIndicator size={20} color="#ef4444" style={{ marginTop: 10 }} />
+                : <LogOut color="#ef4444" size={20} style={{ marginTop: 10 }} />
+              }
               onPress={logout}
+              disabled={logoutLoading}
               style={styles.menuItem}
             />
           </View>

@@ -10,6 +10,7 @@ const OrdersScreen = () => {
     const { backendUrl, token, currency } = useContext(ShopContext);
     const [orderData, setOrderData] = useState([]);
     const [loading, setLoading] = useState(false);
+    const [trackingId, setTrackingId] = useState(null);
     const [refreshing, setRefreshing] = useState(false);
     const { banner, showBanner, clearBanner } = useInlineBanner();
 
@@ -113,10 +114,18 @@ const OrdersScreen = () => {
                                     </View>
                                     <TouchableOpacity 
                                         style={styles.trackBtn} 
-                                        onPress={() => loadOrderData(true)}
-                                        disabled={loading}
+                                        onPress={async () => {
+                                            setTrackingId(index);
+                                            await loadOrderData(false);
+                                            setTrackingId(null);
+                                        }}
+                                        disabled={trackingId === index}
                                     >
-                                        <Text style={styles.trackBtnText}>{loading ? 'Updating...' : 'Track Order'}</Text>
+                                        {trackingId === index ? (
+                                            <ActivityIndicator size={14} color="#374151" />
+                                        ) : (
+                                            <Text style={styles.trackBtnText}>Track Order</Text>
+                                        )}
                                     </TouchableOpacity>
                                 </View>
                             </View>
