@@ -22,18 +22,15 @@ const AdminOrdersScreen = () => {
 
         setLoading(true);
         try {
-            console.log(`[API Call] Admin fetching all orders: ${backendUrl}/api/order/list`);
             const response = await axios.get(backendUrl + "/api/order/list", {
                 headers: { token }
             });
-            console.log('[API Success] Fetch admin orders response:', response.data.success);
             if (response.data.success) {
                 setOrders(response.data.orders.reverse());
             } else {
                 showBanner(response.data.message || "Failed to load orders.", "error");
             }
         } catch (error) {
-            console.error('[API Error] Admin orders fetch failed:', error.response?.data || error.message);
             const msg = error.message;
             if (msg.includes('Network Error')) {
                 showBanner("Unable to connect. Check your internet connection.", "error");
@@ -49,13 +46,11 @@ const AdminOrdersScreen = () => {
         const token = await AsyncStorage.getItem('adminToken');
         setUpdatingOrderId(orderId);
         try {
-            console.log(`[API Call] Updating order status: ${backendUrl}/api/order/status`);
             const response = await axios.patch(
                 backendUrl + "/api/order/status",
                 { orderId, status: newStatus },
                 { headers: { token } }
             );
-            console.log('[API Success] Update status response:', response.data.success);
             if (response.data.success) {
                 showBanner(`Order status updated to "${newStatus}".`, "success");
                 await fetchAllOrders();
@@ -63,7 +58,6 @@ const AdminOrdersScreen = () => {
                 showBanner(response.data.message || "Failed to update status.", "error");
             }
         } catch (error) {
-            console.error('[API Error] Status update failed:', error.response?.data || error.message);
             showBanner(error.message || "Failed to update order status.", "error");
         } finally {
             setUpdatingOrderId(null);

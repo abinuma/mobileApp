@@ -1,5 +1,5 @@
 import React, { useContext, useState } from 'react';
-import { View, Text, TouchableOpacity, ScrollView, StyleSheet, ActivityIndicator } from 'react-native';
+import { View, Text, TouchableOpacity, ScrollView, StyleSheet, ActivityIndicator as RNActivityIndicator } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { ShopContext } from '../context/ShopContext';
 import axios from 'axios';
@@ -8,21 +8,6 @@ import { TextInput, Button, Avatar, List, Divider } from 'react-native-paper';
 import { Settings, LogOut, ShieldCheck, ShoppingBag } from 'lucide-react-native';
 import InlineBanner, { useInlineBanner } from '../components/InlineBanner';
 
-// --- Map raw backend messages to user-friendly messages ---
-const friendlyMessages = {
-  // Login errors
-  "User doesn't exist":        "No account found with this email. Please sign up first.",
-  "Invalid credentials":       "Incorrect password. Please try again.",
-  // Registration errors
-  "User already exists":       "An account with this email already exists. Try logging in.",
-  "Please enter a valid email": "The email address you entered is not valid.",
-  "Please enter a strong password": "Password is too short. Use at least 4 characters.",
-};
-
-const getFriendlyMessage = (raw) => {
-  if (!raw) return "Something went wrong. Please try again.";
-  return friendlyMessages[raw] || raw;
-};
 
 
 const LoginScreen = ({ navigation }) => {
@@ -101,9 +86,7 @@ const LoginScreen = ({ navigation }) => {
     try {
       // 1. ADMIN INTERCEPTION LOGIC (Quick login for admin email)
       if (currentState === 'Login' && email === 'admin@abinu.com') {
-          console.log(`[Diagnostic] Admin login attempt for: ${email} at ${backendUrl}/api/user/admin`);
           const response = await axios.post(backendUrl + '/api/user/admin', { email, password });
-          console.log('[Diagnostic Result] Admin login success:', response.data.success, "| Message:", response.data.message);
           if (response.data.success) {
             await AsyncStorage.setItem('adminToken', response.data.token);
             // Navigate straight to Admin Dashboard
@@ -112,7 +95,7 @@ const LoginScreen = ({ navigation }) => {
               routes: [{ name: 'AdminDashboard' }],
             });
           } else {
-            showBanner(getFriendlyMessage(response.data.message));
+            showBanner(response.data.message || 'Admin login failed.');
           }
           setLoading(false);
           return;
@@ -120,38 +103,26 @@ const LoginScreen = ({ navigation }) => {
 
       // 2. STANDARD USER LOGIC
       if (currentState === 'Sign Up') {
-        console.log(`[Diagnostic] Registering user: ${name} (${email}) at ${backendUrl}/api/user/register`);
         const response = await axios.post(backendUrl + '/api/user/register', { name, email, password });
-        console.log('[Diagnostic Result] Registration status:', response.data.success, "| Message:", response.data.message);
         if (response.data.success) {
           setToken(response.data.token);
           await AsyncStorage.setItem('token', response.data.token);
           showBanner("Account created successfully! Welcome aboard.", 'success');
         } else {
-          showBanner(getFriendlyMessage(response.data.message));
+          showBanner(response.data.message || 'Registration failed.');
         }
       } else {
-        console.log(`[Diagnostic] User login attempt: ${email} at ${backendUrl}/api/user/login`);
         const response = await axios.post(backendUrl + '/api/user/login', { email, password });
-        console.log('[Diagnostic Result] Login status:', response.data.success, "| Message:", response.data.message);
         if (response.data.success) {
           setToken(response.data.token);
           await AsyncStorage.setItem('token', response.data.token);
         } else {
-          showBanner(getFriendlyMessage(response.data.message));
+          showBanner(response.data.message || 'Login failed.');
         }
       }
     } catch (error) {
-      console.error('[API Error] submission failed:', error.response?.data || error.message);
       const rawMsg = error.response?.data?.message || error.message;
-      // Network / server errors
-      if (rawMsg.includes('Network Error')) {
-        showBanner("Unable to connect to server. Check your internet connection.");
-      } else if (rawMsg.includes('timeout')) {
-        showBanner("Request timed out. Please try again.");
-      } else {
-        showBanner(getFriendlyMessage(rawMsg));
-      }
+      showBanner(rawMsg || 'Something went wrong. Please try again.');
     } finally {
       setLoading(false);
     }
@@ -180,10 +151,7 @@ const LoginScreen = ({ navigation }) => {
               title="My Orders"
               left={props => <ShoppingBag color="#000" size={20} style={{ marginTop: 10 }} />}
               right={props => <List.Icon {...props} icon="chevron-right" />}
-              onPress={() => {
-                console.log('[Navigation] Navigating to My Orders from Profile');
-                navigation.navigate('Orders');
-              }}
+              onPress={() => navigation.navigate('Orders')}
               style={styles.menuItem}
             />
             <Divider />
@@ -224,7 +192,7 @@ const LoginScreen = ({ navigation }) => {
               title={logoutLoading ? "Logging out..." : "Logout"}
               titleStyle={{ color: '#ef4444' }}
               left={props => logoutLoading 
-                ? <ActivityIndicator size={20} color="#ef4444" style={{ marginTop: 10 }} />
+                ? <RNActivityIndicator size={20} color="#ef4444" style={{ marginTop: 10 }} />
                 : <LogOut color="#ef4444" size={20} style={{ marginTop: 10 }} />
               }
               onPress={logout}
@@ -309,12 +277,17 @@ const LoginScreen = ({ navigation }) => {
             contentStyle={styles.actionBtnContent}
             onPress={onSubmitHandler}
             disabled={loading}
-            loading={loading}
           >
-            {loading 
-              ? (currentState === 'Login' ? 'SIGNING IN...' : 'SIGNING UP...') 
-              : (currentState === 'Login' ? 'Sign In' : 'Sign Up')
-            }
+            {loading ? (
+              <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center' }}>
+                <RNActivityIndicator size={16} color="#fff" style={{ marginRight: 8 }} />
+                <Text style={{ color: '#fff', fontWeight: 'bold' }}>
+                  {currentState === 'Login' ? 'Signing In...' : 'Creating Account...'}
+                </Text>
+              </View>
+            ) : (
+              currentState === 'Login' ? 'Sign In' : 'Sign Up'
+            )}
           </Button>
 
           <TouchableOpacity 

@@ -1,6 +1,6 @@
 import React, { useState, useContext, useEffect } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Image, Platform } from 'react-native';
-import { TextInput, Button } from 'react-native-paper';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Image, Platform, ActivityIndicator as RNActivityIndicator } from 'react-native';
+import { TextInput, Button, Checkbox } from 'react-native-paper';
 import { ShopContext } from '../../context/ShopContext';
 import InlineBanner, { useInlineBanner } from '../../components/InlineBanner';
 import * as ImagePicker from 'expo-image-picker';
@@ -42,14 +42,11 @@ const AddProductScreen = () => {
     const [category, setCategory] = useState("Men");
     const [subCategory, setSubCategory] = useState("Topwear");
     const [sizes, setSizes] = useState([]);
+    const [bestseller, setBestseller] = useState(false);
     
     const [loading, setLoading] = useState(false);
     const [fieldErrors, setFieldErrors] = useState({});
 
-    // Track image1 specifically since it's the required one
-    useEffect(() => {
-        console.log(`[Diagnostic State Change] image1 is now: ${image1 ? "SET (uri: " + image1.uri.substring(0, 30) + "...)" : "NULL"}`);
-    }, [image1]);
 
     const clearFieldError = (field) => {
         if (fieldErrors[field]) {
@@ -59,7 +56,6 @@ const AddProductScreen = () => {
 
     const pickImage = async (setter, fieldName) => {
         try {
-            console.log(`[Diagnostic] Launching image picker for ${fieldName}`);
             let result = await ImagePicker.launchImageLibraryAsync({
                 mediaTypes: ['images'],
                 allowsEditing: true,
@@ -67,16 +63,13 @@ const AddProductScreen = () => {
                 quality: 0.8,
             });
 
-            console.log(`[Diagnostic] Picker result for ${fieldName}:`, result.canceled ? "Canceled" : "Success (assets: " + result.assets?.length + ")");
-
             if (!result.canceled && result.assets && result.assets.length > 0) {
-                console.log(`[Diagnostic] Setting ${fieldName} to:`, result.assets[0].uri);
                 setter(result.assets[0]);
                 clearFieldError(fieldName);
                 clearBanner();
             }
         } catch (e) {
-            console.error(`[Diagnostic Error] pickImage failed for ${fieldName}:`, e.message);
+            // image picker error
         }
     };
 
@@ -91,7 +84,6 @@ const AddProductScreen = () => {
 
         try {
             if (Platform.OS === 'web') {
-                console.log(`[Diagnostic] Processing WEB BLOB for ${fieldName}:`, imageAsset.uri);
                 const response = await fetch(imageAsset.uri);
                 const blob = await response.blob();
                 
@@ -101,7 +93,6 @@ const AddProductScreen = () => {
                 if (blob.type === 'image/gif') extension = 'gif';
                 if (blob.type === 'image/webp') extension = 'webp';
                 
-                console.log(`[Diagnostic] Blob processed: type=${blob.type}, size=${blob.size}, detected_ext=${extension}`);
                 return new File([blob], `${fieldName}.${extension}`, { type: blob.type });
             } else {
                 const uriParts = imageAsset.uri.split('.');
@@ -113,22 +104,12 @@ const AddProductScreen = () => {
                 };
             }
         } catch (e) {
-            console.error(`[Diagnostic Error] Failed to process ${fieldName}:`, e.message);
             return null;
         }
     };
 
     const onSubmitHandler = async () => {
         clearBanner();
-
-        // Log all fields to see exactly what's going on
-        console.log("[Diagnostic Validation Status]:", {
-            name: name ? "PRESENT" : "MISSING",
-            description: description ? "PRESENT" : "MISSING",
-            price: price ? "PRESENT" : "MISSING",
-            image1: image1 ? "PRESENT" : "MISSING",
-            image1_uri: image1?.uri || "N/A"
-        });
 
         // Validate and highlight missing fields
         const errors = {};
@@ -141,7 +122,6 @@ const AddProductScreen = () => {
         if (sizes.length === 0) { errors.sizes = true; missing.push("At least one Size"); }
 
         if (missing.length > 0) {
-            console.warn("[Diagnostic Result] Validation failed. Missing items:", missing);
             setFieldErrors(errors);
             showBanner(`Please provide: ${missing.join(", ")}.`, "error");
             return;
@@ -149,7 +129,6 @@ const AddProductScreen = () => {
 
         setFieldErrors({});
         setLoading(true);
-        console.log("[Diagnostic Start] Beginning Product Addition flow");
 
         try {
             const adminToken = await AsyncStorage.getItem('adminToken');
@@ -166,7 +145,7 @@ const AddProductScreen = () => {
             formData.append("price", price);
             formData.append("category", category);
             formData.append("subCategory", subCategory);
-            formData.append("bestseller", "false"); 
+            formData.append("bestseller", bestseller ? "true" : "false"); 
             formData.append("sizes", JSON.stringify(sizes));
 
             // Process and append images
@@ -182,8 +161,6 @@ const AddProductScreen = () => {
             const img4 = await getFileForFormData(image4, "image4");
             if (img4) formData.append("image4", img4);
 
-            console.log(`[API Call] Sending POST to: ${backendUrl}/api/product/add`);
-            
             const axiosConfig = {
                 headers: { 
                     token: adminToken 
@@ -198,7 +175,7 @@ const AddProductScreen = () => {
             const response = await axios.post(backendUrl + "/api/product/add", formData, axiosConfig);
             
             if (response.data.success) {
-                showBanner("Product added successfully! 🎉", "success");
+                showBanner("Product added successfully!", "success");
                 setName("");
                 setDescription("");
                 setImage1(null);
@@ -207,13 +184,12 @@ const AddProductScreen = () => {
                 setImage4(null);
                 setPrice("");
                 setSizes([]);
+                setBestseller(false);
             } else {
-                console.error('[API Business Error] Message:', response.data.message);
                 showBanner(response.data.message || "Failed to add product.", "error");
             }
 
         } catch (error) {
-            console.error('[API Connection Error]:', error.response?.data || error.message);
             const msg = error.response?.data?.message || error.message;
             if (msg.includes('Network Error')) {
                 showBanner("Unable to connect to server. Check your internet.", "error");
@@ -222,7 +198,6 @@ const AddProductScreen = () => {
             }
         } finally {
             setLoading(false);
-            console.log("[Diagnostic End] Flow completed");
         }
     };
 
@@ -331,15 +306,28 @@ const AddProductScreen = () => {
                 ))}
             </View>
 
+            <View style={styles.checkboxContainer}>
+                <Checkbox
+                    status={bestseller ? 'checked' : 'unchecked'}
+                    onPress={() => setBestseller(!bestseller)}
+                    color="#000"
+                />
+                <Text style={styles.checkboxLabel}>Add to Bestseller</Text>
+            </View>
+
             <Button 
                 mode="contained" 
                 onPress={onSubmitHandler} 
-                loading={loading}
                 disabled={loading}
                 style={styles.submitBtn}
                 contentStyle={{ paddingVertical: 8 }}
             >
-                {loading ? "ADDING..." : "ADD PRODUCT"}
+                {loading ? (
+                    <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center' }}>
+                        <RNActivityIndicator size={16} color="#fff" style={{ marginRight: 8 }} />
+                        <Text style={{ color: '#fff', fontWeight: 'bold' }}>Adding Product...</Text>
+                    </View>
+                ) : "ADD PRODUCT"}
             </Button>
         </ScrollView>
     );
@@ -483,6 +471,15 @@ const styles = StyleSheet.create({
         backgroundColor: '#000',
         borderRadius: 4,
         marginTop: 16,
+    },
+    checkboxContainer: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        marginBottom: 16,
+    },
+    checkboxLabel: {
+        fontSize: 14,
+        color: '#4b5563',
     },
 });
 

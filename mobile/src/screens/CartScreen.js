@@ -11,7 +11,6 @@ const CartScreen = ({ navigation }) => {
   const { products, currency, cartItems, updateQuantity, getCartAmount, delivery_fee } = useContext(ShopContext);
   const { banner, showBanner, clearBanner } = useInlineBanner();
   const [cartData, setCartData] = useState([]);
-  const [checkingOut, setCheckingOut] = useState(false);
 
   useEffect(() => {
     if (products.length > 0) {
@@ -136,10 +135,8 @@ const CartScreen = ({ navigation }) => {
                 style={styles.checkoutBtn}
                 contentStyle={styles.checkoutBtnContent}
                 onPress={handleCheckout}
-                loading={checkingOut}
-                disabled={checkingOut}
               >
-                {checkingOut ? "CHECKING OUT..." : "PROCEED TO CHECKOUT"}
+                PROCEED TO CHECKOUT
               </Button>
             </View>
           </View>

@@ -9,7 +9,7 @@ const StripeWebView = ({ route }) => {
   const { session_url, orderData } = route.params;
   const navigation = useNavigation();
   const webViewRef = useRef(null);
-  const { token, backendUrl } = useContext(ShopContext);
+  const { token, backendUrl, setCartItems } = useContext(ShopContext);
 
   const handleNavigationStateChange = async (navState) => {
     const { url } = navState;
@@ -32,6 +32,7 @@ const StripeWebView = ({ route }) => {
             { headers: { token } }
           );
           if (response.data.success) {
+            setCartItems({});
             // Navigate to Orders — success handled by VerifyScreen or OrdersScreen
             navigation.navigate('Orders');
           }

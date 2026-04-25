@@ -18,16 +18,13 @@ const ListProductsScreen = () => {
   const fetchList = async () => {
     setLoading(true);
     try {
-      console.log(`[API Call] Fetching product list: ${backendUrl}/api/product/list`);
       const response = await axios.get(backendUrl + "/api/product/list");
-      console.log('[API Success] Fetch list response:', response.data.success);
       if (response.data.success) {
         setList(response.data.products);
       } else {
         showBanner(response.data.message || "Failed to load products.", "error");
       }
     } catch (error) {
-      console.error('[API Error] Fetch list failed:', error.response?.data || error.message);
       const msg = error.message;
       if (msg.includes('Network Error')) {
         showBanner("Unable to connect. Check your internet connection.", "error");
@@ -43,11 +40,9 @@ const ListProductsScreen = () => {
     setDeletingId(id);
     try {
       const adminToken = await AsyncStorage.getItem('adminToken');
-      console.log(`[API Call] Removing product: ${backendUrl}/api/product/${id}`);
       const response = await axios.delete(backendUrl + `/api/product/${id}`, {
         headers: { token: adminToken }
       });
-      console.log('[API Success] Remove product response:', response.data.success);
 
       if (response.data.success) {
         showBanner("Product deleted successfully.", "success");
@@ -56,7 +51,6 @@ const ListProductsScreen = () => {
         showBanner(response.data.message || "Failed to delete product.", "error");
       }
     } catch (error) {
-      console.error('[API Error] Remove product failed:', error.response?.data || error.message);
       showBanner(error.message || "Failed to delete product.", "error");
     } finally {
       setDeletingId(null);

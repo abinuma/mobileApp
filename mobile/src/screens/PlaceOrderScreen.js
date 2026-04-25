@@ -1,5 +1,5 @@
 import React, { useContext, useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, KeyboardAvoidingView, Platform } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, KeyboardAvoidingView, Platform, ActivityIndicator as RNActivityIndicator } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { TextInput, Button } from 'react-native-paper';
 import { ShopContext } from '../context/ShopContext';
@@ -112,7 +112,7 @@ const PlaceOrderScreen = ({ navigation }) => {
                     );
                     if (response.data.success) {
                         setCartItems({});
-                        showBanner("Order placed successfully! 🎉", "success");
+                        showBanner("Order placed successfully! ", "success");
                         setTimeout(() => {
                             navigation.reset({
                                 index: 0,
@@ -308,12 +308,18 @@ const PlaceOrderScreen = ({ navigation }) => {
                     <Button 
                         mode="contained" 
                         onPress={onSubmitHandler} 
-                        loading={loading}
                         disabled={loading}
                         style={styles.placeOrderBtn}
                         contentStyle={styles.btnContent}
                     >
-                        {loading ? "PLACING ORDER..." : "PLACE ORDER"}
+                        {loading ? (
+                            <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center' }}>
+                                <RNActivityIndicator size={16} color="#fff" style={{ marginRight: 8 }} />
+                                <Text style={{ color: '#fff', fontWeight: 'bold' }}>
+                                    {method === 'stripe' ? 'Processing Payment...' : 'Placing Order...'}
+                                </Text>
+                            </View>
+                        ) : "PLACE ORDER"}
                     </Button>
                 </ScrollView>
             </KeyboardAvoidingView>

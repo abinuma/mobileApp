@@ -1,5 +1,5 @@
 import React, { useContext, useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, KeyboardAvoidingView, Platform } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, KeyboardAvoidingView, Platform, ActivityIndicator as RNActivityIndicator } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { TextInput, Button } from 'react-native-paper';
 import axios from 'axios';
@@ -39,9 +39,7 @@ const AdminLoginScreen = ({ navigation }) => {
     setFieldErrors({});
     setLoading(true);
     try {
-      console.log(`[API Call] Admin login: ${backendUrl}/api/user/admin`);
       const response = await axios.post(`${backendUrl}/api/user/admin`, { email, password });
-      console.log('[API Success] Admin login response:', response.data.success);
       
       if (response.data.success) {
         await AsyncStorage.setItem('adminToken', response.data.token);
@@ -52,13 +50,12 @@ const AdminLoginScreen = ({ navigation }) => {
       } else {
         const raw = response.data.message;
         if (raw === 'Invalid credentials') {
-          showBanner('Incorrect admin email or password. Please try again.');
+          showBanner('invalid credentials.');
         } else {
           showBanner(raw || 'Admin login failed. Please check your credentials.');
         }
       }
     } catch (error) {
-      console.error('[API Error] Admin login failed:', error.response?.data || error.message);
       const rawMsg = error.response?.data?.message || error.message;
       if (rawMsg.includes('Network Error')) {
         showBanner('Unable to connect to server. Check your internet connection.');
@@ -110,12 +107,16 @@ const AdminLoginScreen = ({ navigation }) => {
           <Button 
             mode="contained" 
             onPress={handleLogin} 
-            loading={loading}
             disabled={loading}
             style={styles.button}
             contentStyle={{ paddingVertical: 8 }}
           >
-            {loading ? "LOGGING IN..." : "LOGIN"}
+            {loading ? (
+              <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center' }}>
+                <RNActivityIndicator size={16} color="#fff" style={{ marginRight: 8 }} />
+                <Text style={{ color: '#fff', fontWeight: 'bold' }}>Authenticating...</Text>
+              </View>
+            ) : "LOGIN"}
           </Button>
           
           <Button 

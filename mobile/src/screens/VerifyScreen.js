@@ -76,7 +76,7 @@ const VerifyScreen = ({ route, navigation }) => {
 
             if (response.data.success) {
                 setCartItems({});
-                setStatusMessage("Payment verified successfully! 🎉");
+                setStatusMessage("Payment verified successfully! ");
                 setStatusType("success");
                 setTimeout(() => resetToTab('Home', 'Orders'), 1500);
             } else {

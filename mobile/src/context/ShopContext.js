@@ -7,9 +7,8 @@ export const ShopContext = createContext();
 const ShopContextProvider = (props) => {
   const currency = "$";
   const delivery_fee = 10;
-  // Professional configuration using .env (EXPO_PUBLIC_ prefix is required for Expo)
-  const rawUrl = process.env.EXPO_PUBLIC_BACKEND_URL || "https://crownwear-backend.vercel.app"; 
-  const backendUrl = rawUrl.replace(/\/+$/, ""); // Safely remove trailing slashes to prevent // redirects
+
+  const backendUrl = process.env.EXPO_PUBLIC_BACKEND_URL; 
   const [search, setSearch] = useState("");
   const [showSearch, setShowSearch] = useState(false);
   const [cartItems, setCartItems] = useState({});
@@ -22,32 +21,45 @@ const ShopContextProvider = (props) => {
       return;
     }
 
-    let cartData = JSON.parse(JSON.stringify(cartItems));
-
-    if (cartData[itemId]) {
-      if (cartData[itemId][size]) {
-        cartData[itemId][size] += 1;
-      } else {
-        cartData[itemId][size] = 1;
-      }
-    } else {
-      cartData[itemId] = {};
-      cartData[itemId][size] = 1;
-    }
-    setCartItems(cartData);
-
     if (token) {
       try {
-        console.log(`[API Call] Adding to cart: ${backendUrl}/api/cart/add`);
-        const response = await axios.post(
+        await axios.post(
           backendUrl + "/api/cart/add",
           { itemId, size },
           { headers: { token } }
         );
-        console.log('[API Success] Add to cart response:', response.data);
+
+        let cartData = JSON.parse(JSON.stringify(cartItems));
+
+        if (cartData[itemId]) {
+          if (cartData[itemId][size]) {
+            cartData[itemId][size] += 1;
+          } else {
+            cartData[itemId][size] = 1;
+          }
+        } else {
+          cartData[itemId] = {};
+          cartData[itemId][size] = 1;
+        }
+        setCartItems(cartData);
       } catch (error) {
-        console.error('[API Error] Add to cart failed:', error.response?.data || error.message);
+        // cart sync error
+        throw error;
       }
+    } else {
+      let cartData = JSON.parse(JSON.stringify(cartItems));
+
+      if (cartData[itemId]) {
+        if (cartData[itemId][size]) {
+          cartData[itemId][size] += 1;
+        } else {
+          cartData[itemId][size] = 1;
+        }
+      } else {
+        cartData[itemId] = {};
+        cartData[itemId][size] = 1;
+      }
+      setCartItems(cartData);
     }
   };
 
@@ -72,15 +84,13 @@ const ShopContextProvider = (props) => {
 
     if (token) {
       try {
-        console.log(`[API Call] Updating quantity: ${backendUrl}/api/cart/update`);
         const response = await axios.patch(
           backendUrl + "/api/cart/update",
           { itemId, size, quantity },
           { headers: { token } }
         );
-        console.log('[API Success] Update quantity response:', response.data);
       } catch (error) {
-        console.error('[API Error] Update quantity failed:', error.response?.data || error.message);
+        // cart update sync error
       }
     }
   };
@@ -104,33 +114,28 @@ const ShopContextProvider = (props) => {
 
   const getProductsData = async () => {
     try {
-      console.log(`[API Call] Fetching products: ${backendUrl}/api/product/list`);
       const response = await axios.get(backendUrl + "/api/product/list");
-      console.log('[API Success] Fetch products response:', response.data.success ? 'Success' : 'Failed');
       if (response.data.success) {
         setProducts(response.data.products);
       } else {
-        console.error('[API Error] Fetch products failed:', response.data.message);
+        // fetch products failed
       }
     } catch (error) {
-      console.error('[API Error] Fetch products failed:', error.response?.data || error.message);
+      // fetch products error
     }
   };
 
   const getUserCart = async (userToken) => {
     try {
-      console.log(`[API Call] Fetching user cart: ${backendUrl}/api/cart/get`);
       const response = await axios.get(backendUrl + "/api/cart/get", {
         headers: { token: userToken },
       });
-      console.log('[API Success] Fetch user cart response:', response.data.success ? 'Success' : 'Failed');
       if (response.data.success) {
         setCartItems(response.data.cartData);
       }
     } catch (error) {
-      console.error('[API Error] Fetch user cart failed:', error.response?.data || error.message);
+      // cart fetch error
     }
-    console.log('[Auth] Token set and user cart fetching initiated');
   };
 
   useEffect(() => {

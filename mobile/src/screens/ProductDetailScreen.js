@@ -1,5 +1,5 @@
 import React, { useContext, useEffect, useState } from 'react';
-import { View, Text, ScrollView, Image, TouchableOpacity, StyleSheet } from 'react-native';
+import { View, Text, ScrollView, Image, TouchableOpacity, StyleSheet, ActivityIndicator as RNActivityIndicator } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { ShopContext } from '../context/ShopContext';
 import { Button, ActivityIndicator } from 'react-native-paper';
@@ -139,13 +139,17 @@ const ProductDetailScreen = ({ route, navigation }) => {
           <Button 
             mode="contained" 
             onPress={handleAddToCart}
-            loading={adding}
             disabled={adding}
             style={styles.addToCartBtn}
             contentStyle={styles.addToCartBtnContent}
             labelStyle={styles.addToCartBtnLabel}
           >
-            {adding ? "ADDING..." : "ADD TO CART"}
+            {adding ? (
+              <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center' }}>
+                <RNActivityIndicator size={16} color="#fff" style={{ marginRight: 8 }} />
+                <Text style={{ color: '#fff', fontWeight: 'bold', fontSize: 16 }}>Adding to Cart...</Text>
+              </View>
+            ) : "ADD TO CART"}
           </Button>
           
           <View style={styles.policyContainer}>
