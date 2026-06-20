@@ -8,7 +8,9 @@ const ShopContextProvider = (props) => {
   const currency = "$";
   const delivery_fee = 10;
 
-  const backendUrl = process.env.EXPO_PUBLIC_BACKEND_URL; 
+  const backendUrl =
+    process.env.EXPO_PUBLIC_BACKEND_URL ||
+    "https://mobile-appbackend.vercel.app";
   const [search, setSearch] = useState("");
   const [showSearch, setShowSearch] = useState(false);
   const [cartItems, setCartItems] = useState({});
@@ -26,7 +28,7 @@ const ShopContextProvider = (props) => {
         await axios.post(
           backendUrl + "/api/cart/add",
           { itemId, size },
-          { headers: { token } }
+          { headers: { token } },
         );
 
         let cartData = JSON.parse(JSON.stringify(cartItems));
@@ -87,7 +89,7 @@ const ShopContextProvider = (props) => {
         const response = await axios.patch(
           backendUrl + "/api/cart/update",
           { itemId, size, quantity },
-          { headers: { token } }
+          { headers: { token } },
         );
       } catch (error) {
         // cart update sync error
@@ -174,9 +176,7 @@ const ShopContextProvider = (props) => {
   };
 
   return (
-    <ShopContext.Provider value={value}>
-      {props.children}
-    </ShopContext.Provider>
+    <ShopContext.Provider value={value}>{props.children}</ShopContext.Provider>
   );
 };
 
