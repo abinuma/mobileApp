@@ -7,19 +7,30 @@ import userModel from "../models/userModel.js";
 const createToken = (id) => {
   return jwt.sign({ id }, process.env.JWT_SECRET, { expiresIn: '7d' });
 };
-
-//Route for user logic
 const loginUser = async (req, res) => {
   try {
     const { email, password } = req.body;
-    console.log(`[Diagnostic] Login check for ${email} in DB: ${mongoose.connection.name}`);
-    const user = await userModel.findOne({ email });
-    if (!user) {
-      return res.json({ success: false, message: "User doesn't exist" });
+    
+    // Check if it matches admin credentials
+    const adminEmail = (process.env.ADMIN_EMAIL || '').trim().toLowerCase();
+    const adminPassword = (process.env.ADMIN_PASSWORD || '').trim();
+    const inputEmail = (email || '').trim().toLowerCase();
+    const inputPassword = (password || '').trim();
+
+    console.log(`[Diagnostic] Login check for ${inputEmail}`);
+
+    if (adminEmail && adminPassword && inputEmail === adminEmail && inputPassword === adminPassword) {
+      const token = jwt.sign(process.env.ADMIN_EMAIL + process.env.ADMIN_PASSWORD, process.env.JWT_SECRET);
+      return res.json({ success: true, token, isAdmin: true });
     }
 
-    const isMatch = await bcrypt.compare(password, user.password);
+    const user = await userModel.findOne({ email: inputEmail });
 
+    if (!user) {
+      return res.json({ success: false, message: "Invalid credentials" });
+    }
+
+    const isMatch = await bcrypt.compare(inputPassword, user.password);
     if (isMatch) {
       const token = createToken(user._id);
       res.json({ success: true, token });
@@ -32,19 +43,16 @@ const loginUser = async (req, res) => {
   }
 };
 
-//Route for user registration
 const registerUser = async (req, res) => {
   try {
     const { name, email, password } = req.body;
     console.log(`[Diagnostic] Attempting to register ${email} in DB: ${mongoose.connection.name} (Host: ${mongoose.connection.host})`);
 
-    //checking user already exist or not
     const exists = await userModel.findOne({ email });
     if (exists) {
       return res.json({ success: false, message: "User already exists" });
     }
 
-    // validating email and strong password
 
     if (!validator.isEmail(email)) {
       return res.json({
@@ -59,7 +67,6 @@ const registerUser = async (req, res) => {
       });
     }
 
-    //hashing user password
     const salt = await bcrypt.genSalt(10);
     const hashedPassword = await bcrypt.hash(password, salt);
 
@@ -100,5 +107,3 @@ const adminLogin = async (req, res) => {
 };
 
 export { loginUser, registerUser, adminLogin };
-
-

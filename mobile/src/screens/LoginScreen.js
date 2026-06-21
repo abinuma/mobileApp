@@ -12,8 +12,8 @@ import InlineBanner, { useInlineBanner } from '../components/InlineBanner';
 
 const LoginScreen = ({ navigation }) => {
   const [currentState, setCurrentState] = useState('Login');
-  const { token, setToken, backendUrl, setCartItems } = useContext(ShopContext);
-  
+  const { token, setToken, backendUrl, setCartItems, isAdmin, setIsAdmin } = useContext(ShopContext);
+
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -22,12 +22,14 @@ const LoginScreen = ({ navigation }) => {
   const [fieldErrors, setFieldErrors] = useState({});
   const { banner, showBanner, clearBanner } = useInlineBanner();
 
-  // Logout functionality
   const logout = async () => {
     setLogoutLoading(true);
     try {
       await AsyncStorage.removeItem('token');
+      await AsyncStorage.removeItem('isAdmin');
+      await AsyncStorage.removeItem('adminToken');
       setToken('');
+      setIsAdmin(false);
       setCartItems({});
       showBanner("You have been logged out.", 'success');
     } catch (error) {
@@ -46,7 +48,6 @@ const LoginScreen = ({ navigation }) => {
   const onSubmitHandler = async () => {
     clearBanner();
 
-    // Validate and highlight fields
     const errors = {};
     if (!email.trim()) errors.email = true;
     if (!password.trim()) errors.password = true;
@@ -68,45 +69,27 @@ const LoginScreen = ({ navigation }) => {
 
     setFieldErrors({});
 
-    // Client-side email format check
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(email)) {
       showBanner('Please enter a valid email address.');
       return;
     }
 
-    // Client-side password length check
     if (currentState === 'Sign Up' && password.length < 4) {
       showBanner('Password must be at least 4 characters long.');
       return;
     }
 
     setLoading(true);
-    
-    try {
-      // 1. ADMIN INTERCEPTION LOGIC (Quick login for admin email)
-      if (currentState === 'Login' && email === 'admin@abinu.com') {
-          const response = await axios.post(backendUrl + '/api/user/admin', { email, password });
-          if (response.data.success) {
-            await AsyncStorage.setItem('adminToken', response.data.token);
-            // Navigate straight to Admin Dashboard
-            navigation.reset({
-              index: 0,
-              routes: [{ name: 'AdminDashboard' }],
-            });
-          } else {
-            showBanner(response.data.message || 'Admin login failed.');
-          }
-          setLoading(false);
-          return;
-      }
 
-      // 2. STANDARD USER LOGIC
+    try {
       if (currentState === 'Sign Up') {
         const response = await axios.post(backendUrl + '/api/user/register', { name, email, password });
         if (response.data.success) {
           setToken(response.data.token);
           await AsyncStorage.setItem('token', response.data.token);
+          setIsAdmin(false);
+          await AsyncStorage.setItem('isAdmin', 'false');
           showBanner("Account created successfully! Welcome aboard.", 'success');
         } else {
           showBanner(response.data.message || 'Registration failed.');
@@ -114,8 +97,22 @@ const LoginScreen = ({ navigation }) => {
       } else {
         const response = await axios.post(backendUrl + '/api/user/login', { email, password });
         if (response.data.success) {
-          setToken(response.data.token);
-          await AsyncStorage.setItem('token', response.data.token);
+          const userToken = response.data.token;
+          setToken(userToken);
+          await AsyncStorage.setItem('token', userToken);
+
+          if (response.data.isAdmin) {
+            setIsAdmin(true);
+            await AsyncStorage.setItem('isAdmin', 'true');
+            await AsyncStorage.setItem('adminToken', userToken);
+            navigation.reset({
+              index: 0,
+              routes: [{ name: 'AdminDashboard' }],
+            });
+          } else {
+            setIsAdmin(false);
+            await AsyncStorage.setItem('isAdmin', 'false');
+          }
         } else {
           showBanner(response.data.message || 'Login failed.');
         }
@@ -128,7 +125,6 @@ const LoginScreen = ({ navigation }) => {
     }
   };
 
-  // --- LOGGED IN (PROFILE) VIEW ---
   if (token) {
     return (
       <SafeAreaView style={styles.safeArea}>
@@ -139,7 +135,6 @@ const LoginScreen = ({ navigation }) => {
             <Text style={styles.profileEmail}>Manage your profile and orders</Text>
           </View>
 
-          {/* Profile banner (e.g. logout success) */}
           {banner.message ? (
             <View style={{ paddingHorizontal: 16, marginBottom: 8 }}>
               <InlineBanner message={banner.message} type={banner.type} onDismiss={clearBanner} />
@@ -147,7 +142,7 @@ const LoginScreen = ({ navigation }) => {
           ) : null}
 
           <View style={styles.menuSection}>
-             <List.Item
+            <List.Item
               title="My Orders"
               left={props => <ShoppingBag color="#000" size={20} style={{ marginTop: 10 }} />}
               right={props => <List.Icon {...props} icon="chevron-right" />}
@@ -155,15 +150,19 @@ const LoginScreen = ({ navigation }) => {
               style={styles.menuItem}
             />
             <Divider />
-            <List.Item
-              title="Admin Panel"
-              description="Switch to store management"
-              left={props => <ShieldCheck color="#f97316" size={20} style={{ marginTop: 10 }} />}
-              right={props => <List.Icon {...props} icon="chevron-right" />}
-              onPress={() => navigation.navigate('AdminLogin')}
-              style={styles.menuItem}
-            />
-            <Divider />
+            {isAdmin && (
+              <>
+                <List.Item
+                  title="Admin Panel"
+                  description="Switch to store management"
+                  left={props => <ShieldCheck color="#f97316" size={20} style={{ marginTop: 10 }} />}
+                  right={props => <List.Icon {...props} icon="chevron-right" />}
+                  onPress={() => navigation.navigate('AdminDashboard')}
+                  style={styles.menuItem}
+                />
+                <Divider />
+              </>
+            )}
             <List.Item
               title="About Us"
               left={props => <Avatar.Icon size={24} icon="information-outline" style={{ backgroundColor: 'transparent', marginTop: 8 }} color="#4b5563" />}
@@ -191,7 +190,7 @@ const LoginScreen = ({ navigation }) => {
             <List.Item
               title={logoutLoading ? "Logging out..." : "Logout"}
               titleStyle={{ color: '#ef4444' }}
-              left={props => logoutLoading 
+              left={props => logoutLoading
                 ? <RNActivityIndicator size={20} color="#ef4444" style={{ marginTop: 10 }} />
                 : <LogOut color="#ef4444" size={20} style={{ marginTop: 10 }} />
               }
@@ -205,7 +204,6 @@ const LoginScreen = ({ navigation }) => {
     );
   }
 
-  // --- LOGGED OUT (AUTH) VIEW ---
   return (
     <SafeAreaView style={styles.safeArea}>
       <ScrollView contentContainerStyle={styles.scrollContent}>
@@ -215,7 +213,6 @@ const LoginScreen = ({ navigation }) => {
             <View style={styles.titleUnderline} />
           </View>
 
-          {/* Inline error/success banner */}
           <InlineBanner message={banner.message} type={banner.type} onDismiss={clearBanner} />
 
           {currentState !== 'Login' && (
@@ -290,12 +287,12 @@ const LoginScreen = ({ navigation }) => {
             )}
           </Button>
 
-          <TouchableOpacity 
+          {/* <TouchableOpacity 
             style={styles.adminLink} 
             onPress={() => navigation.navigate('AdminLogin')}
           >
             <Text style={styles.adminLinkText}>Switch to Admin Panel</Text>
-          </TouchableOpacity>
+          </TouchableOpacity> */}
         </View>
       </ScrollView>
     </SafeAreaView>
